@@ -1,0 +1,1674 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="日文單字卡">
+<title>日文單字卡</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+JP:wght@300;400;700&family=Noto+Serif+TC:wght@300;400&display=swap" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+:root{
+  --ink:#111010;--paper:#f3ede4;--red:#c0392b;--gold:#c8a03a;
+  --grey:#8a8078;--card-h:220px;
+}
+html,body{height:100%;background:#111010 !important;}
+body{
+  background:var(--ink);
+  font-family:'Noto Serif TC',serif;
+  display:flex;flex-direction:column;
+  align-items:center;justify-content:center;
+  padding:16px 12px;
+  user-select:none;
+  position:relative;
+  min-height:100vh;
+  min-height:-webkit-fill-available;
+}
+/* ── Overlay ── */
+.overlay{
+  position:fixed;inset:0;z-index:200;
+  background:rgba(0,0,0,0.78);
+  display:flex;align-items:center;justify-content:center;
+  padding:20px;
+}
+.overlay.hidden{display:none;}
+/* ── Menu ── */
+#menu-panel{
+  position:fixed;top:0;left:0;bottom:0;
+  width:min(300px,88vw);
+  background:#1a1612;
+  border-right:1px solid rgba(255,255,255,0.07);
+  box-shadow:6px 0 40px rgba(0,0,0,0.7);
+  display:flex;flex-direction:column;
+  z-index:201;transform:translateX(-100%);
+  transition:transform 0.25s ease;
+}
+#menu-panel.open{transform:translateX(0);}
+.menu-head{
+  padding:20px 16px 14px;
+  border-bottom:1px solid rgba(255,255,255,0.06);
+  display:flex;align-items:flex-start;justify-content:space-between;
+}
+.menu-title{color:#fff;font-size:15px;font-weight:600;}
+.menu-sub{color:rgba(255,255,255,0.28);font-size:11px;margin-top:3px;}
+.menu-bar-wrap{margin-top:7px;height:3px;border-radius:2px;background:rgba(255,255,255,0.08);width:160px;overflow:hidden;}
+.menu-bar-fill{height:100%;background:linear-gradient(90deg,#c0392b,#e07060);border-radius:2px;transition:width 0.4s;}
+.menu-close{background:none;border:none;color:rgba(255,255,255,0.35);font-size:18px;cursor:pointer;padding:2px 6px;}
+.menu-list{flex:1;overflow-y:auto;padding-bottom:20px;margin-top:10px;}
+.menu-item{
+  padding:10px 16px;cursor:pointer;
+  display:flex;align-items:center;gap:10px;
+  border-left:3px solid transparent;
+  transition:all 0.15s;
+}
+.menu-item.active{background:rgba(255,255,255,0.04);}
+.menu-check{
+  width:17px;height:17px;border-radius:4px;flex-shrink:0;
+  border:2px solid rgba(255,255,255,0.18);
+  display:flex;align-items:center;justify-content:center;
+  font-size:10px;color:#fff;font-weight:700;
+  transition:all 0.15s;
+}
+.menu-icon{font-size:14px;flex-shrink:0;}
+.menu-label{color:rgba(255,255,255,0.45);font-size:13px;transition:color 0.15s;}
+.menu-item.active .menu-label{color:#fff;}
+.menu-prog{display:flex;align-items:center;gap:6px;margin-top:3px;}
+.menu-prog-bar{flex:1;height:3px;border-radius:2px;background:rgba(255,255,255,0.07);overflow:hidden;}
+.menu-prog-fill{height:100%;border-radius:2px;transition:width 0.3s;}
+.menu-prog-num{font-size:10px;color:rgba(255,255,255,0.25);white-space:nowrap;}
+/* ── Top bar ── */
+#topbar{
+  display:flex;align-items:center;justify-content:space-between;
+  width:min(340px,96vw);margin-bottom:12px;
+}
+.btn-sm{
+  background:rgba(255,255,255,0.07);
+  border:1px solid rgba(255,255,255,0.1);
+  color:rgba(255,255,255,0.65);
+  border-radius:10px;padding:7px 13px;font-size:12px;
+  cursor:pointer;display:flex;align-items:center;gap:5px;
+  font-family:'Noto Serif TC',serif;
+}
+.hint-txt{color:rgba(255,255,255,0.18);font-size:10px;letter-spacing:0.2em;}
+.save-btn{
+  background:rgba(255,255,255,0.07);
+  border:1px solid rgba(255,255,255,0.12);
+  color:rgba(255,255,255,0.55);
+  border-radius:10px;padding:6px 12px;font-size:11px;
+  cursor:pointer;display:flex;align-items:center;gap:5px;
+  font-family:'Noto Serif TC',serif;
+}
+.save-count{color:var(--gold);font-weight:600;}
+/* ── Card wrapper ── */
+#card-wrap{
+  width:min(340px,96vw);
+  transition:opacity 0.19s,transform 0.19s;
+}
+#card-wrap.anim-fwd{opacity:0;transform:translateX(-12px) scale(0.97);}
+#card-wrap.anim-back{opacity:0;transform:translateX(12px) scale(0.97);}
+/* ── Card ── */
+#card{
+  position:relative;height:var(--card-h);border-radius:18px;
+  overflow:hidden;
+  box-shadow:0 18px 55px rgba(0,0,0,0.65),0 0 0 1px rgba(255,255,255,0.06);
+  cursor:grab;touch-action:none;
+}
+#card:active{cursor:grabbing;}
+.learned-border{
+  position:absolute;inset:0;z-index:35;pointer-events:none;
+  border:2px solid rgba(0,200,80,0.28);border-radius:18px;
+  display:none;
+}
+.learned-border.show{display:block;}
+/* Back layer */
+#back{
+  position:absolute;inset:0;
+  background:linear-gradient(135deg,#282016 0%,#181410 100%);
+  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:7px;
+}
+.level-badge{
+  position:absolute;top:12px;left:12px;
+  font-size:10px;padding:3px 9px;border-radius:12px;
+  letter-spacing:0.08em;font-weight:600;
+}
+.learned-tag{
+  position:absolute;top:11px;right:11px;font-size:10px;
+  background:rgba(0,180,80,0.18);color:#4dc87a;
+  border-radius:10px;padding:2px 8px;display:none;
+}
+.learned-tag.show{display:block;}
+.card-cat{color:var(--gold);font-size:11px;letter-spacing:0.2em;}
+#card-jp{
+  font-family:'Noto Serif JP',serif;
+  font-size:clamp(1.4rem,8vw,2.7rem);
+  font-weight:300;color:#fff;line-height:1;
+  letter-spacing:0.04em;text-align:center;padding:0 14px;
+}
+.card-kana{font-family:'Noto Serif JP',serif;font-size:13px;color:rgba(255,255,255,0.26);letter-spacing:0.15em;}
+.slide-hint{position:absolute;bottom:11px;font-size:9px;color:rgba(255,255,255,0.13);letter-spacing:0.18em;}
+/* Front reveal layer */
+#front{
+  position:absolute;inset:0;background:var(--paper);
+  clip-path:inset(0 100% 0 0);
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  gap:4px;padding:14px 26px;
+}
+#front::before{
+  content:'';position:absolute;top:14px;bottom:14px;left:0;
+  width:3px;background:var(--red);border-radius:0 2px 2px 0;
+}
+.rev-label{font-size:10px;letter-spacing:0.28em;color:var(--grey);}
+#rev-meaning{
+  font-family:'Noto Serif TC',serif;
+  font-size:clamp(1rem,5.5vw,1.75rem);
+  font-weight:400;color:#1a1410;line-height:1.2;text-align:center;
+}
+.rev-romaji{font-family:'Noto Serif JP',serif;font-size:12px;color:var(--red);}
+.rev-example{font-family:'Noto Serif JP',serif;font-size:11px;color:var(--grey);text-align:center;margin-top:5px;line-height:1.75;}
+.rev-tw{font-family:'Noto Serif TC',serif;font-size:10px;color:#bbb;}
+/* Handle */
+#handle{
+  position:absolute;top:50%;left:0%;
+  transform:translate(-50%,-50%);
+  width:40px;height:40px;border-radius:50%;
+  background:#fff;z-index:10;pointer-events:none;
+  box-shadow:0 3px 14px rgba(0,0,0,0.3),0 0 0 3px rgba(192,57,43,0.3);
+  display:flex;align-items:center;justify-content:center;
+}
+/* Flash */
+#flash{
+  position:absolute;inset:0;z-index:50;
+  display:none;align-items:center;justify-content:center;
+  background:rgba(0,0,0,0.5);border-radius:18px;font-size:56px;
+}
+#flash.show{display:flex;}
+/* Controls */
+#controls{display:flex;align-items:center;justify-content:center;gap:9px;margin-top:15px;}
+.btn-round{
+  width:40px;height:40px;border-radius:50%;
+  border:1px solid rgba(255,255,255,0.1);
+  background:rgba(255,255,255,0.05);
+  color:rgba(255,255,255,0.5);font-size:15px;cursor:pointer;
+  display:flex;align-items:center;justify-content:center;
+  font-family:'Noto Serif TC',serif;
+}
+.btn-round:disabled{color:rgba(255,255,255,0.12);cursor:default;}
+#btn-speak{
+  width:42px;height:42px;border-radius:50%;
+  border:1px solid rgba(255,255,255,0.1);
+  background:rgba(255,255,255,0.05);
+  color:rgba(255,255,255,0.5);font-size:17px;cursor:pointer;
+  display:flex;align-items:center;justify-content:center;
+  transition:all 0.2s;
+}
+#btn-speak.speaking{
+  border-color:rgba(100,180,255,0.5);
+  background:rgba(100,180,255,0.12);
+  color:#80c8ff;
+}
+#btn-learned{
+  flex:1;max-width:120px;height:42px;border-radius:21px;
+  border:1px solid rgba(255,255,255,0.1);
+  background:rgba(255,255,255,0.05);
+  color:rgba(255,255,255,0.4);font-size:12px;cursor:pointer;
+  display:flex;align-items:center;justify-content:center;gap:5px;
+  transition:all 0.2s;font-family:'Noto Serif TC',serif;
+}
+#btn-learned.active{
+  border-color:rgba(0,200,80,0.4);
+  background:rgba(0,180,80,0.15);
+  color:#4dc87a;
+}
+#filter-hint{
+  text-align:center;margin-top:9px;min-height:16px;
+  color:rgba(255,255,255,0.18);font-size:10px;
+}
+/* ── Backup panel ── */
+#backup-box{
+  background:#1e1a16;border-radius:16px;padding:22px 20px;
+  width:min(320px,92vw);
+  border:1px solid rgba(255,255,255,0.1);
+  box-shadow:0 20px 60px rgba(0,0,0,0.7);
+}
+#backup-box h3{color:#fff;font-size:15px;font-weight:600;margin-bottom:4px;}
+.backup-desc{color:rgba(255,255,255,0.35);font-size:11px;margin-bottom:14px;line-height:1.7;}
+#code-display{
+  background:rgba(255,255,255,0.06);border-radius:10px;
+  padding:10px 12px;margin-bottom:10px;
+  word-break:break-all;font-size:11px;color:var(--gold);
+  font-family:monospace;line-height:1.7;min-height:36px;
+}
+#btn-copy{
+  width:100%;padding:11px;border-radius:10px;border:none;
+  background:var(--red);color:#fff;font-size:13px;
+  cursor:pointer;font-weight:600;margin-bottom:16px;
+  transition:background 0.2s;font-family:'Noto Serif TC',serif;
+}
+#btn-copy.copied{background:#27ae60;}
+.restore-label{color:rgba(255,255,255,0.4);font-size:11px;margin-bottom:6px;}
+#restore-input{
+  width:100%;height:60px;border-radius:10px;
+  border:1px solid rgba(255,255,255,0.15);
+  background:rgba(255,255,255,0.05);color:#fff;
+  font-size:11px;padding:8px 10px;resize:none;
+  font-family:monospace;outline:none;box-sizing:border-box;
+}
+#restore-msg{color:#4dc87a;font-size:12px;margin-top:5px;min-height:18px;}
+.backup-btns{display:flex;gap:8px;margin-top:10px;}
+.backup-btns button{
+  flex:1;padding:10px;border-radius:10px;font-size:12px;
+  cursor:pointer;font-family:'Noto Serif TC',serif;
+}
+#btn-restore{border:1px solid rgba(255,255,255,0.15);background:rgba(255,255,255,0.08);color:#fff;}
+#btn-reset-all{border:1px solid rgba(255,80,60,0.3);background:rgba(192,57,43,0.08);color:#e07060;}
+#btn-close-backup{
+  width:100%;padding:9px;border-radius:10px;margin-top:8px;
+  border:1px solid rgba(255,255,255,0.08);
+  background:transparent;color:rgba(255,255,255,0.3);
+  font-size:12px;cursor:pointer;font-family:'Noto Serif TC',serif;
+}
+/* ── Map modal ── */
+#map-box{
+  background:#16130f;border-radius:18px;padding:18px 16px;
+  width:min(340px,96vw);
+  border:1px solid rgba(255,255,255,0.08);
+  box-shadow:0 20px 60px rgba(0,0,0,0.8);
+}
+#map-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;}
+#map-title{color:#fff;font-size:14px;font-weight:600;}
+#map-region-tag{
+  font-size:11px;padding:3px 10px;border-radius:10px;
+  background:rgba(255,255,255,0.08);color:rgba(255,255,255,0.4);
+  transition:all 0.2s;
+}
+#map-region-tag.selected{background:rgba(192,57,43,0.2);color:#e07060;}
+#map-close{background:none;border:none;color:rgba(255,255,255,0.35);font-size:17px;cursor:pointer;}
+#japan-map{width:100%;max-height:320px;display:block;margin:0 auto;}
+.region{
+  fill-opacity:0.55;stroke:#1a1612;stroke-width:1.5;
+  cursor:pointer;transition:fill-opacity 0.15s,stroke 0.15s;
+}
+.region:hover{fill-opacity:0.85;stroke:rgba(255,255,255,0.3);}
+.region.active{fill-opacity:1;stroke:#fff;stroke-width:2;}
+.region-label{
+  font-size:9px;fill:rgba(255,255,255,0.9);
+  text-anchor:middle;dominant-baseline:central;
+  pointer-events:none;font-weight:600;letter-spacing:0.05em;
+}
+#map-footer{display:flex;gap:8px;margin-top:12px;}
+#map-footer button{
+  flex:1;padding:9px;border-radius:10px;font-size:12px;cursor:pointer;
+  font-family:'Noto Serif TC',serif;transition:all 0.15s;
+}
+#btn-map-all{border:1px solid rgba(255,255,255,0.15);background:rgba(255,255,255,0.06);color:rgba(255,255,255,0.6);}
+#btn-map-confirm{border:none;background:#c0392b;color:#fff;font-weight:600;}
+#btn-map-confirm:disabled{background:rgba(255,255,255,0.1);color:rgba(255,255,255,0.25);cursor:default;}
+.map-btn{
+  background:rgba(255,255,255,0.07);
+  border:1px solid rgba(255,255,255,0.1);
+  color:rgba(255,255,255,0.65);
+  border-radius:10px;padding:7px 11px;font-size:14px;
+  cursor:pointer;
+}
+/* ── Quiz ── */
+#quiz-overlay{z-index:210;}
+#quiz-box{
+  background:#1a1612;border-radius:20px;
+  width:min(360px,96vw);
+  max-height:88vh;
+  overflow-y:auto;
+  border:1px solid rgba(255,255,255,0.09);
+  box-shadow:0 24px 70px rgba(0,0,0,0.8);
+}
+#quiz-header{
+  padding:14px 16px 10px;
+  border-bottom:1px solid rgba(255,255,255,0.06);
+  display:flex;align-items:center;justify-content:space-between;
+}
+#quiz-title{color:#fff;font-size:14px;font-weight:600;}
+#quiz-close{background:none;border:none;color:rgba(255,255,255,0.35);font-size:18px;cursor:pointer;padding:2px 6px;}
+/* Setup screen */
+#quiz-setup{padding:18px 16px 20px;display:none;}
+.quiz-setup-label{color:rgba(255,255,255,0.45);font-size:11px;letter-spacing:0.15em;margin-bottom:8px;}
+.quiz-mode-row{display:flex;gap:8px;margin-bottom:14px;}
+.quiz-mode-btn{
+  flex:1;padding:10px 6px;border-radius:12px;font-size:12px;
+  border:1px solid rgba(255,255,255,0.12);
+  background:rgba(255,255,255,0.05);color:rgba(255,255,255,0.5);
+  cursor:pointer;font-family:'Noto Serif TC',serif;text-align:center;line-height:1.5;
+  transition:all 0.15s;
+}
+.quiz-mode-btn.sel{background:rgba(192,57,43,0.25);border-color:rgba(192,57,43,0.5);color:#e07060;}
+.quiz-scope-row{display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap;}
+.quiz-scope-btn{
+  padding:6px 12px;border-radius:10px;font-size:11px;
+  border:1px solid rgba(255,255,255,0.1);
+  background:rgba(255,255,255,0.04);color:rgba(255,255,255,0.45);
+  cursor:pointer;font-family:'Noto Serif TC',serif;
+  transition:all 0.15s;
+}
+.quiz-scope-btn.sel{background:rgba(200,160,60,0.2);border-color:rgba(200,160,60,0.4);color:#d4a840;}
+#quiz-count-row{display:flex;align-items:center;gap:10px;margin-bottom:18px;}
+#quiz-count-label{color:rgba(255,255,255,0.45);font-size:11px;white-space:nowrap;}
+#quiz-count-slider{flex:1;accent-color:#c0392b;}
+#quiz-count-val{color:var(--gold);font-size:13px;font-weight:600;min-width:28px;}
+#btn-quiz-start{
+  width:100%;padding:13px;border-radius:12px;border:none;
+  background:linear-gradient(135deg,#c0392b,#e05a4a);
+  color:#fff;font-size:14px;font-weight:600;cursor:pointer;
+  font-family:'Noto Serif TC',serif;letter-spacing:0.05em;
+}
+#btn-quiz-start:disabled{background:rgba(255,255,255,0.1);color:rgba(255,255,255,0.25);cursor:default;}
+/* Quiz playing screen */
+#quiz-play{padding:14px 16px 18px;display:none;}
+#quiz-progress-bar-wrap{height:3px;background:rgba(255,255,255,0.08);border-radius:2px;margin-bottom:14px;overflow:hidden;}
+#quiz-progress-bar{height:100%;background:linear-gradient(90deg,#c0392b,#e07060);border-radius:2px;transition:width 0.3s;}
+#quiz-q-meta{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;}
+#quiz-q-num{font-size:11px;color:rgba(255,255,255,0.3);}
+#quiz-score-live{font-size:11px;color:var(--gold);}
+#quiz-direction-badge{
+  font-size:10px;padding:2px 8px;border-radius:8px;
+  background:rgba(255,255,255,0.07);color:rgba(255,255,255,0.4);
+}
+#quiz-question-box{
+  background:rgba(255,255,255,0.04);border-radius:14px;
+  padding:18px 14px;margin-bottom:14px;text-align:center;
+  border:1px solid rgba(255,255,255,0.07);
+  min-height:90px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:5px;
+}
+#quiz-q-label{font-size:10px;color:rgba(255,255,255,0.28);letter-spacing:0.2em;margin-bottom:4px;}
+#quiz-q-main{
+  font-family:'Noto Serif JP',serif;
+  font-size:clamp(1.3rem,7vw,2.2rem);
+  font-weight:300;color:#fff;line-height:1.1;
+}
+#quiz-q-main.zh{font-family:'Noto Serif TC',serif;font-size:clamp(1.1rem,5.5vw,1.8rem);}
+#quiz-q-kana{font-family:'Noto Serif JP',serif;font-size:12px;color:rgba(255,255,255,0.28);}
+#quiz-choices{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px;}
+.quiz-choice{
+  padding:11px 8px;border-radius:12px;
+  border:1px solid rgba(255,255,255,0.1);
+  background:rgba(255,255,255,0.05);
+  color:rgba(255,255,255,0.75);font-size:13px;
+  cursor:pointer;font-family:'Noto Serif TC',serif;
+  text-align:center;line-height:1.35;
+  transition:all 0.15s;
+}
+.quiz-choice:hover:not(:disabled){background:rgba(255,255,255,0.1);border-color:rgba(255,255,255,0.2);}
+.quiz-choice.correct{background:rgba(0,180,80,0.2);border-color:rgba(0,200,80,0.5);color:#4dc87a;}
+.quiz-choice.wrong{background:rgba(192,57,43,0.2);border-color:rgba(192,57,43,0.4);color:#e07060;}
+.quiz-choice.reveal{background:rgba(0,180,80,0.1);border-color:rgba(0,180,80,0.3);color:#4dc87a;}
+.quiz-choice:disabled{cursor:default;}
+#quiz-feedback{
+  text-align:center;font-size:13px;min-height:20px;
+  margin-bottom:8px;font-weight:600;letter-spacing:0.05em;
+}
+#quiz-feedback.ok{color:#4dc87a;}
+#quiz-feedback.ng{color:#e07060;}
+#btn-quiz-next{
+  width:100%;padding:11px;border-radius:11px;border:none;
+  background:rgba(255,255,255,0.08);color:rgba(255,255,255,0.6);
+  font-size:13px;cursor:pointer;font-family:'Noto Serif TC',serif;
+  display:none;
+}
+/* Result screen */
+#quiz-result{padding:20px 16px 22px;display:none;text-align:center;}
+#quiz-result-emoji{font-size:52px;margin-bottom:8px;}
+#quiz-result-title{color:#fff;font-size:17px;font-weight:600;margin-bottom:4px;}
+#quiz-result-sub{color:rgba(255,255,255,0.35);font-size:12px;margin-bottom:16px;}
+#quiz-result-score{
+  font-size:42px;font-weight:700;color:var(--gold);
+  margin-bottom:4px;letter-spacing:-1px;
+}
+#quiz-result-detail{color:rgba(255,255,255,0.3);font-size:12px;margin-bottom:20px;}
+.quiz-result-btns{display:flex;gap:8px;}
+.quiz-result-btns button{
+  flex:1;padding:11px;border-radius:11px;font-size:13px;
+  cursor:pointer;font-family:'Noto Serif TC',serif;
+}
+#btn-quiz-retry{border:1px solid rgba(192,57,43,0.4);background:rgba(192,57,43,0.15);color:#e07060;}
+#btn-quiz-back-setup{border:1px solid rgba(255,255,255,0.12);background:rgba(255,255,255,0.06);color:rgba(255,255,255,0.5);}
+</style>
+</head>
+<body>
+
+<!-- Quiz overlay -->
+<div class="overlay hidden" id="quiz-overlay" onclick="closeQuiz()">
+  <div id="quiz-box" onclick="event.stopPropagation()">
+    <div id="quiz-header">
+      <div id="quiz-title">📝 單字測驗</div>
+      <button id="quiz-close" onclick="closeQuiz()">✕</button>
+    </div>
+
+    <!-- Setup -->
+    <div id="quiz-setup">
+      <div class="quiz-setup-label">題目方向</div>
+      <div class="quiz-mode-row">
+        <div class="quiz-mode-btn sel" data-mode="jp2zh" onclick="selectQuizMode(this)">🇯🇵 日文<br>→ 選中文</div>
+        <div class="quiz-mode-btn" data-mode="zh2jp" onclick="selectQuizMode(this)">🇹🇼 中文<br>→ 選日文</div>
+        <div class="quiz-mode-btn" data-mode="mix" onclick="selectQuizMode(this)">🔀 混合<br>題型</div>
+      </div>
+      <div class="quiz-setup-label">出題範圍</div>
+      <div class="quiz-scope-row" id="quiz-scope-row">
+        <div class="quiz-scope-btn sel" data-scope="ALL" onclick="selectQuizScope(this)">全部</div>
+      </div>
+      <div id="quiz-count-row">
+        <div id="quiz-count-label">題數</div>
+        <input id="quiz-count-slider" type="range" min="5" max="30" value="10" step="5" oninput="document.getElementById('quiz-count-val').textContent=this.value">
+        <div id="quiz-count-val">10</div>
+      </div>
+      <button id="btn-quiz-start" onclick="startQuiz()">開始測驗</button>
+    </div>
+
+    <!-- Playing -->
+    <div id="quiz-play">
+      <div id="quiz-progress-bar-wrap"><div id="quiz-progress-bar" style="width:0%"></div></div>
+      <div id="quiz-q-meta">
+        <div id="quiz-q-num">1 / 10</div>
+        <div id="quiz-direction-badge">日→中</div>
+        <div id="quiz-score-live">✓ 0 &nbsp; ✗ 0</div>
+      </div>
+      <div id="quiz-question-box">
+        <div id="quiz-q-label">這個日文是什麼意思？</div>
+        <div id="quiz-q-main"></div>
+        <div id="quiz-q-kana"></div>
+      </div>
+      <div id="quiz-choices"></div>
+      <div id="quiz-feedback"></div>
+      <button id="btn-quiz-next" onclick="quizNext()">下一題 →</button>
+    </div>
+
+    <!-- Result -->
+    <div id="quiz-result">
+      <div id="quiz-result-emoji">🎉</div>
+      <div id="quiz-result-title">測驗完成！</div>
+      <div id="quiz-result-sub">本次成績</div>
+      <div id="quiz-result-score">8/10</div>
+      <div id="quiz-result-detail">答對率 80%</div>
+      <div class="quiz-result-btns">
+        <button id="btn-quiz-retry" onclick="retryQuiz()">再來一次</button>
+        <button id="btn-quiz-back-setup" onclick="backToSetup()">重新設定</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Map overlay -->
+<div class="overlay hidden" id="map-overlay" onclick="closeMap()">
+  <div id="map-box" onclick="event.stopPropagation()">
+    <div id="map-header">
+      <div id="map-title">🗾 點地圖選地區</div>
+      <div id="map-region-tag">未選擇</div>
+      <button id="map-close" onclick="closeMap()">✕</button>
+    </div>
+    <svg id="japan-map" viewBox="0 0 280 420" xmlns="http://www.w3.org/2000/svg">
+      <!-- 北海道 -->
+      <path class="region" data-region="北海道" fill="#4ecdb4"
+        d="M160,10 L188,6 L215,12 L240,26 L248,44 L238,62 L214,72 L188,76 L162,70 L148,52 L150,28 Z"/>
+      <text class="region-label" x="197" y="42">北海道</text>
+      <!-- 東北 -->
+      <path class="region" data-region="東北" fill="#7dba7d"
+        d="M174,68 L204,62 L220,72 L224,92 L218,112 L206,126 L190,132 L172,130 L162,116 L158,94 L164,74 Z"/>
+      <text class="region-label" x="192" y="100">東北</text>
+      <!-- 関東 -->
+      <path class="region" data-region="関東" fill="#c8a03a"
+        d="M180,130 L218,122 L236,132 L240,150 L232,168 L216,176 L192,176 L176,165 L172,150 L176,134 Z"/>
+      <text class="region-label" x="205" y="152">関東</text>
+      <!-- 中部 -->
+      <path class="region" data-region="中部" fill="#e8904a"
+        d="M160,94 L180,88 L180,130 L172,150 L158,165 L138,170 L120,162 L114,146 L118,126 L132,108 L150,96 Z"/>
+      <text class="region-label" x="152" y="136">中部</text>
+      <!-- 近畿 -->
+      <path class="region" data-region="近畿" fill="#e05a4a"
+        d="M96,148 L128,142 L148,152 L152,170 L140,184 L116,190 L90,184 L78,170 L84,156 Z"/>
+      <text class="region-label" x="118" y="168">近畿</text>
+      <!-- 中国 -->
+      <path class="region" data-region="中国" fill="#8888d8"
+        d="M56,164 L90,154 L108,164 L118,180 L114,198 L84,204 L54,200 L40,186 L46,172 Z"/>
+      <text class="region-label" x="80" y="182">中国</text>
+      <!-- 四国 -->
+      <path class="region" data-region="四国" fill="#e06aa0"
+        d="M84,202 L128,200 L144,212 L140,230 L115,236 L84,232 L70,216 Z"/>
+      <text class="region-label" x="108" y="218">四国</text>
+      <!-- 九州 -->
+      <path class="region" data-region="九州" fill="#6aaae0"
+        d="M32,186 L62,178 L82,192 L88,214 L82,238 L64,254 L38,258 L18,242 L14,220 L24,200 Z"/>
+      <text class="region-label" x="52" y="218">九州</text>
+      <!-- 沖縄 (dotted connector) -->
+      <line x1="35" y1="260" x2="35" y2="345" stroke="rgba(255,255,255,0.15)" stroke-width="1" stroke-dasharray="3,4"/>
+      <path class="region" data-region="沖縄" fill="#4ec8c8"
+        d="M14,350 L40,346 L60,354 L56,368 L36,372 L14,364 Z"/>
+      <text class="region-label" x="38" y="359">沖縄</text>
+    </svg>
+    <div id="map-footer">
+      <button id="btn-map-all" onclick="applyMapFilter(null)">全部地名</button>
+      <button id="btn-map-confirm" onclick="applyMapFilter(selectedMapRegion)" disabled>確認選擇</button>
+    </div>
+  </div>
+</div>
+
+<!-- Menu overlay -->
+<div class="overlay hidden" id="menu-overlay" onclick="closeMenu()"></div>
+<div id="menu-panel">
+  <div class="menu-head">
+    <div>
+      <div class="menu-title">學習分類</div>
+      <div class="menu-sub">已學會 <span id="menu-count" style="color:var(--gold)">0</span> / <span id="menu-total">0</span> 個</div>
+      <div class="menu-bar-wrap"><div class="menu-bar-fill" id="menu-bar" style="width:0%"></div></div>
+    </div>
+    <button class="menu-close" onclick="closeMenu()">✕</button>
+  </div>
+  <div class="menu-list" id="menu-list"></div>
+</div>
+
+<!-- Backup overlay -->
+<div class="overlay hidden" id="backup-overlay" onclick="closeBackup()">
+  <div id="backup-box" onclick="event.stopPropagation()">
+    <h3>📋 備份 / 還原進度</h3>
+    <p class="backup-desc">進度自動存在手機裡（localStorage）。<br>換裝置時可用備份碼轉移。</p>
+    <div id="code-display">—</div>
+    <button id="btn-copy" onclick="copyCode()">複製備份碼</button>
+    <div class="restore-label">貼上備份碼還原：</div>
+    <textarea id="restore-input" placeholder="貼上備份碼..."></textarea>
+    <div id="restore-msg"></div>
+    <div class="backup-btns">
+      <button id="btn-restore" onclick="applyRestore()">還原進度</button>
+      <button id="btn-reset-all" onclick="resetAll()">重置記錄</button>
+    </div>
+    <button id="btn-close-backup" onclick="closeBackup()">關閉</button>
+  </div>
+</div>
+
+<!-- Top bar -->
+<div id="topbar">
+  <button class="btn-sm" onclick="openMenu()">☰ 分類</button>
+  <button class="map-btn" onclick="openMap()" title="地圖選地區">🗾</button>
+  <button class="map-btn" onclick="openQuiz()" title="單字測驗">📝</button>
+  <button class="save-btn" onclick="openBackup()">💾 <span class="save-count" id="top-count">0</span></button>
+</div>
+
+<!-- Card -->
+<div id="card-wrap">
+  <div id="card">
+    <div class="learned-border" id="learned-border"></div>
+    <!-- Back -->
+    <div id="back">
+      <div class="level-badge" id="level-badge"></div>
+      <div class="learned-tag" id="learned-tag">✓ 已學會</div>
+      <div class="card-cat" id="card-cat"></div>
+      <div id="card-jp"></div>
+      <div class="card-kana" id="card-kana"></div>
+      <div class="slide-hint" id="slide-hint">向右滑動揭開答案 →</div>
+    </div>
+    <!-- Front -->
+    <div id="front">
+      <div class="rev-label">意思</div>
+      <div id="rev-meaning"></div>
+      <div class="rev-romaji" id="rev-romaji"></div>
+      <div class="rev-example">
+        <span id="rev-example"></span><br>
+        <span class="rev-tw" id="rev-tw"></span>
+      </div>
+    </div>
+    <!-- Handle -->
+    <div id="handle">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#c0392b" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+    </div>
+    <!-- Flash -->
+    <div id="flash">✅</div>
+  </div>
+
+  <!-- Controls -->
+  <div id="controls">
+    <button class="btn-round" id="btn-back" onclick="go('back')">←</button>
+    <button id="btn-speak" onclick="speak()">🔈</button>
+    <button id="btn-learned" onclick="toggleLearned()">標記學會</button>
+    <button class="btn-round" onclick="go('fwd')">→</button>
+  </div>
+
+  <div id="filter-hint">學會的卡片出現機率 1/6 · 進度自動儲存</div>
+</div>
+
+<script>
+// ══════════════════════════════════════════
+//  VOCAB DATA
+// ══════════════════════════════════════════
+const vocab=[
+  // N5 單字
+  {jp:"桜",kana:"さくら",romaji:"sakura",meaning:"櫻花",category:"名詞",level:"N5",example:"桜が咲いています。",exTW:"櫻花正在盛開。"},
+  {jp:"猫",kana:"ねこ",romaji:"neko",meaning:"貓",category:"名詞",level:"N5",example:"猫が寝ています。",exTW:"貓正在睡覺。"},
+  {jp:"犬",kana:"いぬ",romaji:"inu",meaning:"狗",category:"名詞",level:"N5",example:"犬を散歩させます。",exTW:"帶狗去散步。"},
+  {jp:"魚",kana:"さかな",romaji:"sakana",meaning:"魚",category:"名詞",level:"N5",example:"魚を食べます。",exTW:"吃魚。"},
+  {jp:"水",kana:"みず",romaji:"mizu",meaning:"水",category:"名詞",level:"N5",example:"水を飲みます。",exTW:"喝水。"},
+  {jp:"山",kana:"やま",romaji:"yama",meaning:"山",category:"名詞",level:"N5",example:"山に登ります。",exTW:"爬山。"},
+  {jp:"川",kana:"かわ",romaji:"kawa",meaning:"河川",category:"名詞",level:"N5",example:"川で泳ぎます。",exTW:"在河裡游泳。"},
+  {jp:"空",kana:"そら",romaji:"sora",meaning:"天空",category:"名詞",level:"N5",example:"今日は空が青い。",exTW:"今天天空很藍。"},
+  {jp:"花",kana:"はな",romaji:"hana",meaning:"花",category:"名詞",level:"N5",example:"花がきれいです。",exTW:"花很漂亮。"},
+  {jp:"木",kana:"き",romaji:"ki",meaning:"樹木",category:"名詞",level:"N5",example:"公園に木がたくさんある。",exTW:"公園裡有很多樹。"},
+  {jp:"電車",kana:"でんしゃ",romaji:"densha",meaning:"電車",category:"名詞",level:"N5",example:"電車で通勤します。",exTW:"搭電車通勤。"},
+  {jp:"バス",kana:"ばす",romaji:"basu",meaning:"公車",category:"名詞",level:"N5",example:"バスで学校へ行きます。",exTW:"搭公車去學校。"},
+  {jp:"車",kana:"くるま",romaji:"kuruma",meaning:"車",category:"名詞",level:"N5",example:"車を運転します。",exTW:"開車。"},
+  {jp:"本",kana:"ほん",romaji:"hon",meaning:"書",category:"名詞",level:"N5",example:"本を読みます。",exTW:"看書。"},
+  {jp:"学校",kana:"がっこう",romaji:"gakkou",meaning:"學校",category:"名詞",level:"N5",example:"学校へ行きます。",exTW:"去學校。"},
+  {jp:"先生",kana:"せんせい",romaji:"sensei",meaning:"老師",category:"名詞",level:"N5",example:"先生に質問します。",exTW:"向老師提問。"},
+  {jp:"友達",kana:"ともだち",romaji:"tomodachi",meaning:"朋友",category:"名詞",level:"N5",example:"友達と映画を見ます。",exTW:"和朋友看電影。"},
+  {jp:"家族",kana:"かぞく",romaji:"kazoku",meaning:"家人",category:"名詞",level:"N5",example:"家族で旅行します。",exTW:"和家人去旅行。"},
+  {jp:"時間",kana:"じかん",romaji:"jikan",meaning:"時間",category:"名詞",level:"N5",example:"時間がありません。",exTW:"沒有時間。"},
+  {jp:"今日",kana:"きょう",romaji:"kyou",meaning:"今天",category:"名詞",level:"N5",example:"今日は何曜日ですか？",exTW:"今天是星期幾？"},
+  {jp:"明日",kana:"あした",romaji:"ashita",meaning:"明天",category:"名詞",level:"N5",example:"明日また来ます。",exTW:"明天再來。"},
+  {jp:"昨日",kana:"きのう",romaji:"kinou",meaning:"昨天",category:"名詞",level:"N5",example:"昨日何をしましたか？",exTW:"昨天做了什麼？"},
+  {jp:"朝",kana:"あさ",romaji:"asa",meaning:"早上",category:"名詞",level:"N5",example:"朝ごはんを食べます。",exTW:"吃早餐。"},
+  {jp:"夜",kana:"よる",romaji:"yoru",meaning:"晚上",category:"名詞",level:"N5",example:"夜は涼しいです。",exTW:"晚上很涼爽。"},
+  {jp:"名前",kana:"なまえ",romaji:"namae",meaning:"名字",category:"名詞",level:"N5",example:"お名前は何ですか？",exTW:"您叫什麼名字？"},
+  {jp:"仕事",kana:"しごと",romaji:"shigoto",meaning:"工作",category:"名詞",level:"N5",example:"仕事が好きです。",exTW:"喜歡工作。"},
+  {jp:"勉強",kana:"べんきょう",romaji:"benkyou",meaning:"學習",category:"名詞",level:"N5",example:"毎日日本語を勉強する。",exTW:"每天學日語。"},
+  {jp:"旅行",kana:"りょこう",romaji:"ryokou",meaning:"旅行",category:"名詞",level:"N5",example:"旅行が好きです。",exTW:"喜歡旅行。"},
+  {jp:"大きい",kana:"おおきい",romaji:"ookii",meaning:"大的",category:"形容詞",level:"N5",example:"大きい犬ですね。",exTW:"好大的狗啊。"},
+  {jp:"小さい",kana:"ちいさい",romaji:"chiisai",meaning:"小的",category:"形容詞",level:"N5",example:"小さい猫がかわいい。",exTW:"小貓好可愛。"},
+  {jp:"高い",kana:"たかい",romaji:"takai",meaning:"貴的／高的",category:"形容詞",level:"N5",example:"このビルは高いです。",exTW:"這棟大樓很高。"},
+  {jp:"安い",kana:"やすい",romaji:"yasui",meaning:"便宜的",category:"形容詞",level:"N5",example:"このお店は安い。",exTW:"這家店很便宜。"},
+  {jp:"新しい",kana:"あたらしい",romaji:"atarashii",meaning:"新的",category:"形容詞",level:"N5",example:"新しい靴を買いました。",exTW:"買了新鞋。"},
+  {jp:"古い",kana:"ふるい",romaji:"furui",meaning:"舊的",category:"形容詞",level:"N5",example:"古いお寺を見学した。",exTW:"參觀了古老的寺廟。"},
+  {jp:"美味しい",kana:"おいしい",romaji:"oishii",meaning:"好吃",category:"形容詞",level:"N5",example:"このラーメンは美味しい！",exTW:"這碗拉麵好好吃！"},
+  {jp:"嬉しい",kana:"うれしい",romaji:"ureshii",meaning:"開心",category:"形容詞",level:"N5",example:"合格して嬉しいです。",exTW:"合格了真開心。"},
+  {jp:"大丈夫",kana:"だいじょうぶ",romaji:"daijoubu",meaning:"沒問題",category:"形容詞",level:"N5",example:"大丈夫ですか？",exTW:"你還好嗎？"},
+  {jp:"行く",kana:"いく",romaji:"iku",meaning:"去",category:"動詞",level:"N5",example:"学校へ行きます。",exTW:"去學校。"},
+  {jp:"来る",kana:"くる",romaji:"kuru",meaning:"來",category:"動詞",level:"N5",example:"友達が来ます。",exTW:"朋友要來了。"},
+  {jp:"食べる",kana:"たべる",romaji:"taberu",meaning:"吃",category:"動詞",level:"N5",example:"朝ごはんを食べます。",exTW:"吃早餐。"},
+  {jp:"飲む",kana:"のむ",romaji:"nomu",meaning:"喝",category:"動詞",level:"N5",example:"水を飲みます。",exTW:"喝水。"},
+  {jp:"見る",kana:"みる",romaji:"miru",meaning:"看",category:"動詞",level:"N5",example:"テレビを見ます。",exTW:"看電視。"},
+  {jp:"聞く",kana:"きく",romaji:"kiku",meaning:"聽／問",category:"動詞",level:"N5",example:"音楽を聞きます。",exTW:"聽音樂。"},
+  {jp:"話す",kana:"はなす",romaji:"hanasu",meaning:"說話",category:"動詞",level:"N5",example:"日本語で話します。",exTW:"用日語說話。"},
+  {jp:"書く",kana:"かく",romaji:"kaku",meaning:"寫",category:"動詞",level:"N5",example:"手紙を書きます。",exTW:"寫信。"},
+  {jp:"読む",kana:"よむ",romaji:"yomu",meaning:"讀",category:"動詞",level:"N5",example:"本を読みます。",exTW:"看書。"},
+  {jp:"買う",kana:"かう",romaji:"kau",meaning:"買",category:"動詞",level:"N5",example:"スーパーで野菜を買います。",exTW:"在超市買蔬菜。"},
+  {jp:"寝る",kana:"ねる",romaji:"neru",meaning:"睡覺",category:"動詞",level:"N5",example:"11時に寝ます。",exTW:"11點睡覺。"},
+  // N5 句型
+  {jp:"〜です",kana:"〜です",romaji:"~desu",meaning:"是〜（禮貌）",category:"N5句型",level:"S5",example:"私は学生です。",exTW:"我是學生。"},
+  {jp:"〜ます",kana:"〜ます",romaji:"~masu",meaning:"做〜（禮貌）",category:"N5句型",level:"S5",example:"毎日運動します。",exTW:"每天運動。"},
+  {jp:"〜ません",kana:"〜ません",romaji:"~masen",meaning:"不做〜",category:"N5句型",level:"S5",example:"お酒は飲みません。",exTW:"不喝酒。"},
+  {jp:"〜がほしいです",kana:"〜がほしいです",romaji:"~ga hoshii desu",meaning:"想要〜",category:"N5句型",level:"S5",example:"新しい携帯がほしいです。",exTW:"我想要新手機。"},
+  {jp:"〜をください",kana:"〜をください",romaji:"~wo kudasai",meaning:"請給我〜",category:"N5句型",level:"S5",example:"メニューをください。",exTW:"請給我菜單。"},
+  {jp:"〜がすきです",kana:"〜がすきです",romaji:"~ga suki desu",meaning:"喜歡〜",category:"N5句型",level:"S5",example:"音楽が好きです。",exTW:"我喜歡音樂。"},
+  {jp:"〜があります",kana:"〜があります",romaji:"~ga arimasu",meaning:"有〜（物）",category:"N5句型",level:"S5",example:"時間がありません。",exTW:"沒有時間。"},
+  {jp:"〜にあります",kana:"〜にあります",romaji:"~ni arimasu",meaning:"在〜（物）",category:"N5句型",level:"S5",example:"本は机の上にあります。",exTW:"書在桌子上。"},
+  {jp:"〜に行きます",kana:"〜にいきます",romaji:"~ni ikimasu",meaning:"去〜",category:"N5句型",level:"S5",example:"東京に行きます。",exTW:"去東京。"},
+  {jp:"〜はいくらですか",kana:"〜はいくらですか",romaji:"~wa ikura desu ka",meaning:"〜多少錢？",category:"N5句型",level:"S5",example:"これはいくらですか？",exTW:"這個多少錢？"},
+  {jp:"〜から〜まで",kana:"〜から〜まで",romaji:"~kara ~made",meaning:"從〜到〜",category:"N5句型",level:"S5",example:"9時から5時まで働きます。",exTW:"從9點工作到5點。"},
+  {jp:"〜ましょう",kana:"〜ましょう",romaji:"~mashou",meaning:"我們〜吧",category:"N5句型",level:"S5",example:"一緒に行きましょう！",exTW:"一起去吧！"},
+  // N4 單字
+  {jp:"出発",kana:"しゅっぱつ",romaji:"shuppatsu",meaning:"出發",category:"名詞",level:"N4",example:"明日東京を出発します。",exTW:"明天從東京出發。"},
+  {jp:"到着",kana:"とうちゃく",romaji:"touchaku",meaning:"抵達",category:"名詞",level:"N4",example:"無事に到着しました。",exTW:"平安抵達了。"},
+  {jp:"準備",kana:"じゅんび",romaji:"junbi",meaning:"準備",category:"名詞",level:"N4",example:"準備ができました。",exTW:"準備好了。"},
+  {jp:"経験",kana:"けいけん",romaji:"keiken",meaning:"經驗",category:"名詞",level:"N4",example:"経験が大切です。",exTW:"經驗很重要。"},
+  {jp:"練習",kana:"れんしゅう",romaji:"renshuu",meaning:"練習",category:"名詞",level:"N4",example:"毎日練習します。",exTW:"每天練習。"},
+  {jp:"説明",kana:"せつめい",romaji:"setsumei",meaning:"說明",category:"名詞",level:"N4",example:"もう一度説明してください。",exTW:"請再說明一次。"},
+  {jp:"質問",kana:"しつもん",romaji:"shitsumon",meaning:"提問",category:"名詞",level:"N4",example:"質問があります。",exTW:"我有問題。"},
+  {jp:"天気",kana:"てんき",romaji:"tenki",meaning:"天氣",category:"名詞",level:"N4",example:"今日の天気はどうですか？",exTW:"今天天氣怎麼樣？"},
+  {jp:"意見",kana:"いけん",romaji:"iken",meaning:"意見",category:"名詞",level:"N4",example:"あなたの意見を聞かせてください。",exTW:"請讓我聽聽你的意見。"},
+  {jp:"理由",kana:"りゆう",romaji:"riyuu",meaning:"理由",category:"名詞",level:"N4",example:"理由を教えてください。",exTW:"請告訴我理由。"},
+  {jp:"計画",kana:"けいかく",romaji:"keikaku",meaning:"計畫",category:"名詞",level:"N4",example:"来年の計画を立てた。",exTW:"制定了明年的計畫。"},
+  {jp:"場所",kana:"ばしょ",romaji:"basho",meaning:"地方",category:"名詞",level:"N4",example:"待ち合わせ場所はどこですか？",exTW:"集合地點在哪裡？"},
+  {jp:"気持ち",kana:"きもち",romaji:"kimochi",meaning:"心情",category:"名詞",level:"N4",example:"気持ちを伝えることが大切です。",exTW:"傳達心情很重要。"},
+  {jp:"生活",kana:"せいかつ",romaji:"seikatsu",meaning:"生活",category:"名詞",level:"N4",example:"日本の生活に慣れました。",exTW:"習慣了日本的生活。"},
+  {jp:"文化",kana:"ぶんか",romaji:"bunka",meaning:"文化",category:"名詞",level:"N4",example:"日本の文化に興味があります。",exTW:"對日本文化有興趣。"},
+  {jp:"便利",kana:"べんり",romaji:"benri",meaning:"方便",category:"形容詞",level:"N4",example:"スマホはとても便利です。",exTW:"智慧型手機非常方便。"},
+  {jp:"複雑",kana:"ふくざつ",romaji:"fukuzatsu",meaning:"複雜",category:"形容詞",level:"N4",example:"この問題は複雑です。",exTW:"這個問題很複雜。"},
+  {jp:"正直",kana:"しょうじき",romaji:"shoujiki",meaning:"誠實",category:"形容詞",level:"N4",example:"正直に話してください。",exTW:"請誠實說。"},
+  {jp:"決める",kana:"きめる",romaji:"kimeru",meaning:"決定",category:"動詞",level:"N4",example:"目標を決めましょう。",exTW:"來決定目標吧。"},
+  {jp:"続ける",kana:"つづける",romaji:"tsuzukeru",meaning:"繼續",category:"動詞",level:"N4",example:"諦めずに続けましょう。",exTW:"不要放棄繼續吧。"},
+  {jp:"変わる",kana:"かわる",romaji:"kawaru",meaning:"改變",category:"動詞",level:"N4",example:"天気が変わりやすい。",exTW:"天氣容易變化。"},
+  {jp:"伝える",kana:"つたえる",romaji:"tsutaeru",meaning:"傳達",category:"動詞",level:"N4",example:"気持ちを伝えます。",exTW:"傳達心情。"},
+  {jp:"考える",kana:"かんがえる",romaji:"kangaeru",meaning:"思考",category:"動詞",level:"N4",example:"よく考えてから決めます。",exTW:"好好思考後再決定。"},
+  {jp:"覚える",kana:"おぼえる",romaji:"oboeru",meaning:"記住",category:"動詞",level:"N4",example:"単語を覚えます。",exTW:"記單字。"},
+  {jp:"忘れる",kana:"わすれる",romaji:"wasureru",meaning:"忘記",category:"動詞",level:"N4",example:"約束を忘れないでください。",exTW:"請不要忘記約定。"},
+  {jp:"始める",kana:"はじめる",romaji:"hajimeru",meaning:"開始",category:"動詞",level:"N4",example:"新しいことを始めます。",exTW:"開始新的事情。"},
+  {jp:"終わる",kana:"おわる",romaji:"owaru",meaning:"結束",category:"動詞",level:"N4",example:"仕事が終わりました。",exTW:"工作結束了。"},
+  {jp:"送る",kana:"おくる",romaji:"okuru",meaning:"送／寄",category:"動詞",level:"N4",example:"メールを送ります。",exTW:"寄出郵件。"},
+  {jp:"助ける",kana:"たすける",romaji:"tasukeru",meaning:"幫助",category:"動詞",level:"N4",example:"困っている人を助けます。",exTW:"幫助有困難的人。"},
+  {jp:"楽しむ",kana:"たのしむ",romaji:"tanoshimu",meaning:"享受",category:"動詞",level:"N4",example:"旅行を楽しみます。",exTW:"享受旅行。"},
+  // N4 句型
+  {jp:"〜たいです",kana:"〜たいです",romaji:"~tai desu",meaning:"想做〜",category:"N4句型",level:"S4",example:"日本へ行きたいです。",exTW:"我想去日本。"},
+  {jp:"〜てもいいですか",kana:"〜てもいいですか",romaji:"~te mo ii desu ka",meaning:"可以〜嗎？",category:"N4句型",level:"S4",example:"ここに座ってもいいですか？",exTW:"我可以坐這裡嗎？"},
+  {jp:"〜てはいけません",kana:"〜てはいけません",romaji:"~te wa ikemasen",meaning:"不可以〜",category:"N4句型",level:"S4",example:"ここで写真を撮ってはいけません。",exTW:"這裡不可以拍照。"},
+  {jp:"〜なければなりません",kana:"〜なければなりません",romaji:"~nakereba narimasen",meaning:"必須〜",category:"N4句型",level:"S4",example:"明日早く起きなければなりません。",exTW:"明天必須早起。"},
+  {jp:"〜ことができます",kana:"〜ことができます",romaji:"~koto ga dekimasu",meaning:"能夠〜",category:"N4句型",level:"S4",example:"日本語を話すことができます。",exTW:"我會說日語。"},
+  {jp:"〜と思います",kana:"〜とおもいます",romaji:"~to omoimasu",meaning:"我認為〜",category:"N4句型",level:"S4",example:"彼は来ないと思います。",exTW:"我認為他不會來。"},
+  {jp:"〜たことがあります",kana:"〜たことがあります",romaji:"~ta koto ga arimasu",meaning:"曾經〜過",category:"N4句型",level:"S4",example:"富士山に登ったことがあります。",exTW:"我曾經爬過富士山。"},
+  {jp:"〜ながら",kana:"〜ながら",romaji:"~nagara",meaning:"一邊〜一邊〜",category:"N4句型",level:"S4",example:"音楽を聴きながら勉強します。",exTW:"一邊聽音樂一邊讀書。"},
+  {jp:"〜てしまいました",kana:"〜てしまいました",romaji:"~te shimaimashita",meaning:"不小心〜了",category:"N4句型",level:"S4",example:"財布を忘れてしまいました。",exTW:"我不小心忘記帶錢包了。"},
+  {jp:"〜のに",kana:"〜のに",romaji:"~noni",meaning:"明明〜卻〜",category:"N4句型",level:"S4",example:"頑張ったのに失敗してしまった。",exTW:"明明努力了卻失敗了。"},
+  {jp:"〜ために",kana:"〜ために",romaji:"~tame ni",meaning:"為了〜",category:"N4句型",level:"S4",example:"健康のために運動します。",exTW:"為了健康而運動。"},
+  {jp:"〜によると",kana:"〜によると",romaji:"~ni yoru to",meaning:"根據〜",category:"N4句型",level:"S4",example:"天気予報によると明日は雨です。",exTW:"根據天氣預報明天會下雨。"},
+  // N3 單字
+  {jp:"懐かしい",kana:"なつかしい",romaji:"natsukashii",meaning:"懷念",category:"形容詞",level:"N3",example:"懐かしい音楽を聴いた。",exTW:"聽了令人懷念的音樂。"},
+  {jp:"諦める",kana:"あきらめる",romaji:"akirameru",meaning:"放棄",category:"動詞",level:"N3",example:"絶対に諦めない！",exTW:"絕對不放棄！"},
+  {jp:"悩む",kana:"なやむ",romaji:"nayamu",meaning:"煩惱",category:"動詞",level:"N3",example:"将来のことで悩んでいます。",exTW:"正在為將來煩惱。"},
+  {jp:"驚く",kana:"おどろく",romaji:"odoroku",meaning:"驚訝",category:"動詞",level:"N3",example:"その知らせに驚きました。",exTW:"對那個消息感到驚訝。"},
+  {jp:"喜ぶ",kana:"よろこぶ",romaji:"yorokobu",meaning:"高興",category:"動詞",level:"N3",example:"プレゼントをもらって喜んだ。",exTW:"收到禮物很高興。"},
+  {jp:"迷う",kana:"まよう",romaji:"mayou",meaning:"猶豫",category:"動詞",level:"N3",example:"どれを選ぶか迷っています。",exTW:"正在猶豫要選哪個。"},
+  {jp:"達成",kana:"たっせい",romaji:"tassei",meaning:"達成",category:"名詞",level:"N3",example:"目標を達成しました。",exTW:"達成目標了。"},
+  {jp:"努力",kana:"どりょく",romaji:"doryoku",meaning:"努力",category:"名詞",level:"N3",example:"努力すれば報われます。",exTW:"努力就會有回報。"},
+  {jp:"影響",kana:"えいきょう",romaji:"eikyou",meaning:"影響",category:"名詞",level:"N3",example:"環境が人に影響を与えます。",exTW:"環境對人有影響。"},
+  {jp:"原因",kana:"げんいん",romaji:"genin",meaning:"原因",category:"名詞",level:"N3",example:"問題の原因を調べました。",exTW:"調查了問題的原因。"},
+  {jp:"結果",kana:"けっか",romaji:"kekka",meaning:"結果",category:"名詞",level:"N3",example:"努力の結果が出ました。",exTW:"努力的結果出來了。"},
+  {jp:"責任",kana:"せきにん",romaji:"sekinin",meaning:"責任",category:"名詞",level:"N3",example:"責任を持って仕事をします。",exTW:"負責任地工作。"},
+  {jp:"信頼",kana:"しんらい",romaji:"shinrai",meaning:"信任",category:"名詞",level:"N3",example:"信頼できる人が必要です。",exTW:"需要可以信任的人。"},
+  {jp:"協力",kana:"きょうりょく",romaji:"kyouryoku",meaning:"合作",category:"名詞",level:"N3",example:"みんなで協力しましょう。",exTW:"大家一起合作吧。"},
+  {jp:"成功",kana:"せいこう",romaji:"seikou",meaning:"成功",category:"名詞",level:"N3",example:"成功するまで諦めません。",exTW:"不成功不放棄。"},
+  {jp:"失敗",kana:"しっぱい",romaji:"shippai",meaning:"失敗",category:"名詞",level:"N3",example:"失敗から学びましょう。",exTW:"從失敗中學習吧。"},
+  {jp:"目標",kana:"もくひょう",romaji:"mokuhyou",meaning:"目標",category:"名詞",level:"N3",example:"目標を持って進みましょう。",exTW:"帶著目標前進吧。"},
+  {jp:"将来",kana:"しょうらい",romaji:"shourai",meaning:"將來",category:"名詞",level:"N3",example:"将来の夢は医者です。",exTW:"將來的夢想是醫生。"},
+  {jp:"環境",kana:"かんきょう",romaji:"kankyou",meaning:"環境",category:"名詞",level:"N3",example:"環境を守ることが大切です。",exTW:"保護環境很重要。"},
+  {jp:"急ぐ",kana:"いそぐ",romaji:"isogu",meaning:"趕快",category:"動詞",level:"N3",example:"急いで！電車が来るよ！",exTW:"快點！電車來了！"},
+  {jp:"断る",kana:"ことわる",romaji:"kotowaru",meaning:"拒絕",category:"動詞",level:"N3",example:"丁寧に断りました。",exTW:"有禮貌地拒絕了。"},
+  {jp:"確認する",kana:"かくにんする",romaji:"kakunin suru",meaning:"確認",category:"動詞",level:"N3",example:"もう一度確認してください。",exTW:"請再確認一次。"},
+  {jp:"改善する",kana:"かいぜんする",romaji:"kaizen suru",meaning:"改善",category:"動詞",level:"N3",example:"問題点を改善しました。",exTW:"改善了問題點。"},
+  {jp:"緊張する",kana:"きんちょうする",romaji:"kinchou suru",meaning:"緊張",category:"動詞",level:"N3",example:"発表の前に緊張しました。",exTW:"發表前很緊張。"},
+  {jp:"曖昧な",kana:"あいまいな",romaji:"aimai na",meaning:"曖昧的",category:"形容詞",level:"N3",example:"曖昧な返事はよくない。",exTW:"曖昧的回答不好。"},
+  // N3 句型
+  {jp:"〜でしょう",kana:"〜でしょう",romaji:"~deshou",meaning:"應該〜吧",category:"N3句型",level:"S3",example:"明日は雨でしょう。",exTW:"明天應該會下雨吧。"},
+  {jp:"〜ばよかった",kana:"〜ばよかった",romaji:"~ba yokatta",meaning:"早知道就〜了",category:"N3句型",level:"S3",example:"もっと早く来ればよかった。",exTW:"早知道就早點來了。"},
+  {jp:"〜によって",kana:"〜によって",romaji:"~ni yotte",meaning:"因〜而異",category:"N3句型",level:"S3",example:"人によって意見が違います。",exTW:"因人而異。"},
+  {jp:"〜わけではない",kana:"〜わけではない",romaji:"~wake de wa nai",meaning:"並不是〜",category:"N3句型",level:"S3",example:"嫌いなわけではないけど…",exTW:"並不是討厭啦，只是……"},
+  {jp:"〜に違いない",kana:"〜にちがいない",romaji:"~ni chigai nai",meaning:"一定是〜",category:"N3句型",level:"S3",example:"彼が犯人に違いない。",exTW:"一定是他是犯人。"},
+  {jp:"〜ようになる",kana:"〜ようになる",romaji:"~you ni naru",meaning:"漸漸變得〜",category:"N3句型",level:"S3",example:"日本語が話せるようになりました。",exTW:"變得能說日語了。"},
+  {jp:"〜はずだ",kana:"〜はずだ",romaji:"~hazu da",meaning:"理應是〜",category:"N3句型",level:"S3",example:"彼女は来るはずだ。",exTW:"她理應會來的。"},
+  {jp:"〜らしい",kana:"〜らしい",romaji:"~rashii",meaning:"聽說〜",category:"N3句型",level:"S3",example:"彼は転職するらしい。",exTW:"聽說他要換工作。"},
+  {jp:"〜かもしれない",kana:"〜かもしれない",romaji:"~kamoshirenai",meaning:"也許〜",category:"N3句型",level:"S3",example:"明日雨が降るかもしれない。",exTW:"明天也許會下雨。"},
+  {jp:"〜ことにした",kana:"〜ことにした",romaji:"~koto ni shita",meaning:"決定做〜",category:"N3句型",level:"S3",example:"毎日運動することにした。",exTW:"決定每天運動。"},
+  {jp:"〜に対して",kana:"〜にたいして",romaji:"~ni taishite",meaning:"對於〜",category:"N3句型",level:"S3",example:"先生に対して失礼なことを言った。",exTW:"對老師說了失禮的話。"},
+  {jp:"〜くせに",kana:"〜くせに",romaji:"~kuse ni",meaning:"明明〜卻（責怪）",category:"N3句型",level:"S3",example:"知っているくせに黙っていた。",exTW:"明明知道卻一直沉默。"},
+  // 日常用語
+  {jp:"おはよう",kana:"おはよう",romaji:"ohayou",meaning:"早安",category:"日常用語",level:"DAI",example:"おはようございます！",exTW:"早安！"},
+  {jp:"ただいま",kana:"ただいま",romaji:"tadaima",meaning:"我回來了",category:"日常用語",level:"DAI",example:"ただいま！─おかえり！",exTW:"我回來了！"},
+  {jp:"いただきます",kana:"いただきます",romaji:"itadakimasu",meaning:"我開動了",category:"日常用語",level:"DAI",example:"食べる前に「いただきます」と言う。",exTW:"吃飯前說「我開動了」。"},
+  {jp:"お疲れ様",kana:"おつかれさま",romaji:"otsukaresama",meaning:"辛苦了",category:"日常用語",level:"DAI",example:"お疲れ様でした！",exTW:"您辛苦了！"},
+  {jp:"よろしく",kana:"よろしく",romaji:"yoroshiku",meaning:"請多指教",category:"日常用語",level:"DAI",example:"どうぞよろしくお願いします。",exTW:"請多多關照。"},
+  {jp:"すみません",kana:"すみません",romaji:"sumimasen",meaning:"不好意思",category:"日常用語",level:"DAI",example:"すみません、道を教えてください。",exTW:"不好意思，請問路怎麼走？"},
+  {jp:"なるほど",kana:"なるほど",romaji:"naruhodo",meaning:"原來如此",category:"日常用語",level:"DAI",example:"なるほど、そういうことか。",exTW:"原來如此，是這樣啊。"},
+  {jp:"もったいない",kana:"もったいない",romaji:"mottainai",meaning:"太可惜了",category:"日常用語",level:"DAI",example:"食べ物を捨てるのはもったいない。",exTW:"浪費食物太可惜了。"},
+  {jp:"しょうがない",kana:"しょうがない",romaji:"shouganai",meaning:"沒辦法",category:"日常用語",level:"DAI",example:"雨が降ってきた。しょうがないね。",exTW:"下雨了，沒辦法呢。"},
+  {jp:"気をつけて",kana:"きをつけて",romaji:"ki wo tsukete",meaning:"路上小心",category:"日常用語",level:"DAI",example:"気をつけて帰ってね。",exTW:"路上小心回家喔。"},
+  {jp:"ごめんなさい",kana:"ごめんなさい",romaji:"gomennasai",meaning:"對不起",category:"日常用語",level:"DAI",example:"遅れてごめんなさい！",exTW:"對不起，我遲到了！"},
+  {jp:"おやすみ",kana:"おやすみ",romaji:"oyasumi",meaning:"晚安",category:"日常用語",level:"DAI",example:"おやすみなさい、いい夢を。",exTW:"晚安，做個好夢。"},
+  // 進階敬語
+  {jp:"お世話になります",kana:"おせわになります",romaji:"osewa ni narimasu",meaning:"承蒙關照",category:"進階用語",level:"ADV",example:"いつもお世話になっております。",exTW:"一直承蒙您的關照。"},
+  {jp:"承知しました",kana:"しょうちしました",romaji:"shouchi shimashita",meaning:"遵命",category:"進階用語",level:"ADV",example:"では、そのように承知しました。",exTW:"好的，我明白了。"},
+  {jp:"ご迷惑をおかけして",kana:"ごめいわくをおかけして",romaji:"go-meiwaku wo okake shite",meaning:"給您添麻煩了",category:"進階用語",level:"ADV",example:"ご迷惑をおかけして、大変申し訳ございません。",exTW:"給您添了麻煩，深感抱歉。"},
+  {jp:"おかげさまで",kana:"おかげさまで",romaji:"okagesamade",meaning:"托您的福",category:"進階用語",level:"ADV",example:"おかげさまで、無事に終わりました。",exTW:"托您的福，順利結束了。"},
+  {jp:"差し支えなければ",kana:"さしつかえなければ",romaji:"sashitsukae nakereba",meaning:"如果方便的話",category:"進階用語",level:"ADV",example:"差し支えなければ、理由を教えていただけますか。",exTW:"如果方便的話，可以告訴我原因嗎？"},
+  {jp:"改めて",kana:"あらためて",romaji:"aratamete",meaning:"另外再說",category:"進階用語",level:"ADV",example:"改めてご連絡いたします。",exTW:"我之後再與您聯繫。"},
+  // 地名・北海道
+  {jp:"北海道",kana:"ほっかいどう",romaji:"Hokkaidō",meaning:"北海道",category:"地名",level:"GEO",region:"北海道",example:"北海道のラベンダーは美しい。",exTW:"北海道的薰衣草非常美麗。"},
+  {jp:"札幌",kana:"さっぽろ",romaji:"Sapporo",meaning:"札幌",category:"地名",level:"GEO",region:"北海道",example:"札幌の雪まつりは世界的に有名だ。",exTW:"札幌雪祭舉世聞名。"},
+  {jp:"稚内",kana:"わっかない",romaji:"Wakkanai",meaning:"稚內",category:"地名",level:"GEO",region:"北海道",example:"稚内は日本最北端の市です。",exTW:"稚內是日本最北端的城市。"},
+  {jp:"旭川",kana:"あさひかわ",romaji:"Asahikawa",meaning:"旭川",category:"地名",level:"GEO",region:"北海道",example:"旭川動物園はペンギンで有名です。",exTW:"旭川動物園以企鵝聞名。"},
+  {jp:"函館",kana:"はこだて",romaji:"Hakodate",meaning:"函館",category:"地名",level:"GEO",region:"北海道",example:"函館の夜景は世界三大夜景の一つです。",exTW:"函館夜景是世界三大夜景之一。"},
+  {jp:"帯広",kana:"おびひろ",romaji:"Obihiro",meaning:"帶廣",category:"地名",level:"GEO",region:"北海道",example:"帯広は十勝平野の中心都市です。",exTW:"帶廣是十勝平原的中心城市。"},
+  {jp:"釧路",kana:"くしろ",romaji:"Kushiro",meaning:"釧路",category:"地名",level:"GEO",region:"北海道",example:"釧路湿原は日本最大の湿原です。",exTW:"釧路濕原是日本最大的濕原。"},
+  {jp:"小樽",kana:"おたる",romaji:"Otaru",meaning:"小樽",category:"地名",level:"GEO",region:"北海道",example:"小樽運河はロマンチックな雰囲気です。",exTW:"小樽運河充滿浪漫氣息。"},
+  // 地名・東北
+  {jp:"仙台",kana:"せんだい",romaji:"Sendai",meaning:"仙台",category:"地名",level:"GEO",region:"東北",example:"仙台は東北地方最大の都市です。",exTW:"仙台是東北地區最大的城市。"},
+  {jp:"青森",kana:"あおもり",romaji:"Aomori",meaning:"青森",category:"地名",level:"GEO",region:"東北",example:"青森のねぶた祭りは有名です。",exTW:"青森的睡魔祭很有名。"},
+  {jp:"盛岡",kana:"もりおか",romaji:"Morioka",meaning:"盛岡",category:"地名",level:"GEO",region:"東北",example:"盛岡冷麺はわんこそばと並んで有名です。",exTW:"盛岡冷麵和碗裝蕎麥麵同樣有名。"},
+  {jp:"秋田",kana:"あきた",romaji:"Akita",meaning:"秋田",category:"地名",level:"GEO",region:"東北",example:"秋田のきりたんぽ鍋は郷土料理です。",exTW:"秋田的棒棒雞鍋是鄉土料理。"},
+  {jp:"山形",kana:"やまがた",romaji:"Yamagata",meaning:"山形",category:"地名",level:"GEO",region:"東北",example:"山形のさくらんぼは甘くておいしい。",exTW:"山形的櫻桃又甜又好吃。"},
+  {jp:"松島",kana:"まつしま",romaji:"Matsushima",meaning:"松島",category:"地名",level:"GEO",region:"東北",example:"松島は日本三景の一つです。",exTW:"松島是日本三景之一。"},
+  // 地名・関東
+  {jp:"東京",kana:"とうきょう",romaji:"Tōkyō",meaning:"東京",category:"地名",level:"GEO",region:"関東",example:"東京は日本の首都です。",exTW:"東京是日本的首都。"},
+  {jp:"新宿",kana:"しんじゅく",romaji:"Shinjuku",meaning:"新宿",category:"地名",level:"GEO",region:"関東",example:"新宿で待ち合わせしよう。",exTW:"在新宿集合吧。"},
+  {jp:"渋谷",kana:"しぶや",romaji:"Shibuya",meaning:"澀谷",category:"地名",level:"GEO",region:"関東",example:"渋谷のスクランブル交差点は有名だ。",exTW:"澀谷的十字路口很有名。"},
+  {jp:"秋葉原",kana:"あきはばら",romaji:"Akihabara",meaning:"秋葉原",category:"地名",level:"GEO",region:"関東",example:"秋葉原はアニメとゲームの聖地だ。",exTW:"秋葉原是動漫和遊戲的聖地。"},
+  {jp:"浅草",kana:"あさくさ",romaji:"Asakusa",meaning:"淺草",category:"地名",level:"GEO",region:"関東",example:"浅草の仲見世通りを歩いた。",exTW:"走在淺草的仲見世商店街。"},
+  {jp:"横浜",kana:"よこはま",romaji:"Yokohama",meaning:"橫濱",category:"地名",level:"GEO",region:"関東",example:"横浜の中華街は日本最大です。",exTW:"橫濱中華街是日本最大的。"},
+  {jp:"鎌倉",kana:"かまくら",romaji:"Kamakura",meaning:"鎌倉",category:"地名",level:"GEO",region:"関東",example:"鎌倉の大仏は有名です。",exTW:"鎌倉大佛很有名。"},
+  {jp:"日光",kana:"にっこう",romaji:"Nikkō",meaning:"日光",category:"地名",level:"GEO",region:"関東",example:"日光東照宮は世界遺産です。",exTW:"日光東照宮是世界遺產。"},
+  {jp:"箱根",kana:"はこね",romaji:"Hakone",meaning:"箱根",category:"地名",level:"GEO",region:"関東",example:"箱根の温泉でゆっくりしたい。",exTW:"想在箱根的溫泉好好放鬆。"},
+  {jp:"池袋",kana:"いけぶくろ",romaji:"Ikebukuro",meaning:"池袋",category:"地名",level:"GEO",region:"関東",example:"池袋はショッピングとアニメで有名です。",exTW:"池袋以購物和動漫聞名。"},
+  {jp:"銀座",kana:"ぎんざ",romaji:"Ginza",meaning:"銀座",category:"地名",level:"GEO",region:"関東",example:"銀座は高級ショッピングの街です。",exTW:"銀座是高級購物街。"},
+  {jp:"上野",kana:"うえの",romaji:"Ueno",meaning:"上野",category:"地名",level:"GEO",region:"関東",example:"上野公園の桜は毎年きれいです。",exTW:"上野公園的櫻花每年都很美。"},
+  // 地名・中部
+  {jp:"富士山",kana:"ふじさん",romaji:"Fujisan",meaning:"富士山",category:"地名",level:"GEO",region:"中部",example:"富士山は日本一高い山です。",exTW:"富士山是日本最高的山。"},
+  {jp:"名古屋",kana:"なごや",romaji:"Nagoya",meaning:"名古屋",category:"地名",level:"GEO",region:"中部",example:"名古屋は名古屋めしが有名です。",exTW:"名古屋以名古屋料理聞名。"},
+  {jp:"金沢",kana:"かなざわ",romaji:"Kanazawa",meaning:"金澤",category:"地名",level:"GEO",region:"中部",example:"金沢の兼六園は日本三名園の一つです。",exTW:"金澤的兼六園是日本三名園之一。"},
+  {jp:"長野",kana:"ながの",romaji:"Nagano",meaning:"長野",category:"地名",level:"GEO",region:"中部",example:"長野の善光寺は有名な寺です。",exTW:"長野的善光寺是著名寺廟。"},
+  {jp:"松本",kana:"まつもと",romaji:"Matsumoto",meaning:"松本",category:"地名",level:"GEO",region:"中部",example:"松本城は国宝に指定されています。",exTW:"松本城被指定為國寶。"},
+  {jp:"静岡",kana:"しずおか",romaji:"Shizuoka",meaning:"靜岡",category:"地名",level:"GEO",region:"中部",example:"静岡はお茶とみかんで有名です。",exTW:"靜岡以茶葉和橘子聞名。"},
+  {jp:"白川郷",kana:"しらかわごう",romaji:"Shirakawagō",meaning:"白川鄉",category:"地名",level:"GEO",region:"中部",example:"白川郷の合掌造りは世界遺産です。",exTW:"白川鄉的合掌造是世界遺產。"},
+  // 地名・近畿
+  {jp:"大阪",kana:"おおさか",romaji:"Ōsaka",meaning:"大阪",category:"地名",level:"GEO",region:"近畿",example:"大阪はたこ焼きが有名です。",exTW:"大阪以章魚燒聞名。"},
+  {jp:"京都",kana:"きょうと",romaji:"Kyōto",meaning:"京都",category:"地名",level:"GEO",region:"近畿",example:"京都には古いお寺がたくさんあります。",exTW:"京都有許多古老的寺廟。"},
+  {jp:"奈良",kana:"なら",romaji:"Nara",meaning:"奈良",category:"地名",level:"GEO",region:"近畿",example:"奈良には鹿がたくさんいる。",exTW:"奈良有很多鹿。"},
+  {jp:"神戸",kana:"こうべ",romaji:"Kōbe",meaning:"神戶",category:"地名",level:"GEO",region:"近畿",example:"神戸ビーフは世界的に有名です。",exTW:"神戶牛肉舉世聞名。"},
+  {jp:"姫路",kana:"ひめじ",romaji:"Himeji",meaning:"姬路",category:"地名",level:"GEO",region:"近畿",example:"姫路城は世界遺産に登録されています。",exTW:"姬路城已登錄為世界遺產。"},
+  {jp:"和歌山",kana:"わかやま",romaji:"Wakayama",meaning:"和歌山",category:"地名",level:"GEO",region:"近畿",example:"和歌山の高野山は弘法大師の聖地です。",exTW:"和歌山的高野山是弘法大師的聖地。"},
+  {jp:"嵐山",kana:"あらしやま",romaji:"Arashiyama",meaning:"嵐山",category:"地名",level:"GEO",region:"近畿",example:"嵐山の竹林は絶景です。",exTW:"嵐山的竹林是絕景。"},
+  {jp:"伏見稲荷",kana:"ふしみいなり",romaji:"Fushimi Inari",meaning:"伏見稻荷",category:"地名",level:"GEO",region:"近畿",example:"伏見稲荷の千本鳥居は美しい。",exTW:"伏見稻荷的千本鳥居很美。"},
+  // 地名・中国
+  {jp:"広島",kana:"ひろしま",romaji:"Hiroshima",meaning:"廣島",category:"地名",level:"GEO",region:"中国",example:"広島のお好み焼きを食べた。",exTW:"吃了廣島風大阪燒。"},
+  {jp:"岡山",kana:"おかやま",romaji:"Okayama",meaning:"岡山",category:"地名",level:"GEO",region:"中国",example:"岡山の後楽園は日本三名園の一つです。",exTW:"岡山的後樂園是日本三名園之一。"},
+  {jp:"鳥取",kana:"とっとり",romaji:"Tottori",meaning:"鳥取",category:"地名",level:"GEO",region:"中国",example:"鳥取砂丘は日本最大の砂丘です。",exTW:"鳥取沙丘是日本最大的沙丘。"},
+  {jp:"松江",kana:"まつえ",romaji:"Matsue",meaning:"松江",category:"地名",level:"GEO",region:"中国",example:"松江城は現存する天守の一つです。",exTW:"松江城是現存天守之一。"},
+  {jp:"宮島",kana:"みやじま",romaji:"Miyajima",meaning:"宮島",category:"地名",level:"GEO",region:"中国",example:"宮島の厳島神社は水の中に建っています。",exTW:"宮島的嚴島神社建在水中。"},
+  // 地名・四国
+  {jp:"高松",kana:"たかまつ",romaji:"Takamatsu",meaning:"高松",category:"地名",level:"GEO",region:"四国",example:"高松の栗林公園は美しい庭園です。",exTW:"高松的栗林公園是美麗的庭園。"},
+  {jp:"松山",kana:"まつやま",romaji:"Matsuyama",meaning:"松山",category:"地名",level:"GEO",region:"四国",example:"道後温泉は日本最古の温泉の一つです。",exTW:"道後溫泉是日本最古老的溫泉之一。"},
+  {jp:"高知",kana:"こうち",romaji:"Kōchi",meaning:"高知",category:"地名",level:"GEO",region:"四国",example:"高知は坂本龍馬の出身地です。",exTW:"高知是坂本龍馬的出生地。"},
+  {jp:"徳島",kana:"とくしま",romaji:"Tokushima",meaning:"德島",category:"地名",level:"GEO",region:"四国",example:"徳島の阿波踊りは夏の風物詩です。",exTW:"德島的阿波舞是夏天的風景詩。"},
+  // 地名・九州
+  {jp:"福岡",kana:"ふくおか",romaji:"Fukuoka",meaning:"福岡",category:"地名",level:"GEO",region:"九州",example:"福岡はアジアへのゲートウェイです。",exTW:"福岡是通往亞洲的門戶。"},
+  {jp:"博多",kana:"はかた",romaji:"Hakata",meaning:"博多",category:"地名",level:"GEO",region:"九州",example:"博多ラーメンは豚骨が美味しい。",exTW:"博多拉麵的豚骨湯頭很好喝。"},
+  {jp:"長崎",kana:"ながさき",romaji:"Nagasaki",meaning:"長崎",category:"地名",level:"GEO",region:"九州",example:"長崎は日本の窓口として栄えました。",exTW:"長崎曾作為日本的窗口繁榮一時。"},
+  {jp:"熊本",kana:"くまもと",romaji:"Kumamoto",meaning:"熊本",category:"地名",level:"GEO",region:"九州",example:"熊本のくまモンは全国的に人気です。",exTW:"熊本的熊本熊全國知名。"},
+  {jp:"鹿児島",kana:"かごしま",romaji:"Kagoshima",meaning:"鹿兒島",category:"地名",level:"GEO",region:"九州",example:"鹿児島には活火山の桜島があります。",exTW:"鹿兒島有活火山櫻島。"},
+  {jp:"別府",kana:"べっぷ",romaji:"Beppu",meaning:"別府",category:"地名",level:"GEO",region:"九州",example:"別府の地獄めぐりは人気の観光です。",exTW:"別府的地獄巡遊是熱門觀光景點。"},
+  {jp:"阿蘇",kana:"あそ",romaji:"Aso",meaning:"阿蘇",category:"地名",level:"GEO",region:"九州",example:"阿蘇山は世界最大級のカルデラです。",exTW:"阿蘇山是世界最大級的火山口。"},
+  // 地名・沖縄
+  {jp:"沖縄",kana:"おきなわ",romaji:"Okinawa",meaning:"沖繩",category:"地名",level:"GEO",region:"沖縄",example:"沖縄の海はきれいですね。",exTW:"沖繩的海很漂亮呢。"},
+  {jp:"那覇",kana:"なは",romaji:"Naha",meaning:"那霸",category:"地名",level:"GEO",region:"沖縄",example:"那覇の首里城は琉球王国の象徴です。",exTW:"那霸的首里城是琉球王國的象徵。"},
+  {jp:"石垣島",kana:"いしがきじま",romaji:"Ishigakijima",meaning:"石垣島",category:"地名",level:"GEO",region:"沖縄",example:"石垣島のサンゴ礁は美しい。",exTW:"石垣島的珊瑚礁很美麗。"},
+  {jp:"宮古島",kana:"みやこじま",romaji:"Miyakojima",meaning:"宮古島",category:"地名",level:"GEO",region:"沖縄",example:"宮古島の海は透明度が高い。",exTW:"宮古島的海透明度很高。"},
+  // 顏色
+  {jp:"赤",kana:"あか",romaji:"aka",meaning:"紅色",category:"顏色",level:"COL",example:"赤い車が好きです。",exTW:"我喜歡紅色的車。"},
+  {jp:"青",kana:"あお",romaji:"ao",meaning:"藍色",category:"顏色",level:"COL",example:"空が青い。",exTW:"天空是藍色的。"},
+  {jp:"黄色",kana:"きいろ",romaji:"kiiro",meaning:"黃色",category:"顏色",level:"COL",example:"黄色い花が咲いた。",exTW:"黃色的花開了。"},
+  {jp:"緑",kana:"みどり",romaji:"midori",meaning:"綠色",category:"顏色",level:"COL",example:"緑の葉っぱが美しい。",exTW:"綠色的葉子很美麗。"},
+  {jp:"白",kana:"しろ",romaji:"shiro",meaning:"白色",category:"顏色",level:"COL",example:"白い雪が降ってきた。",exTW:"白色的雪飄下來了。"},
+  {jp:"黒",kana:"くろ",romaji:"kuro",meaning:"黑色",category:"顏色",level:"COL",example:"黒いコートを着ている。",exTW:"穿著黑色大衣。"},
+  {jp:"ピンク",kana:"ぴんく",romaji:"pinku",meaning:"粉紅色",category:"顏色",level:"COL",example:"ピンクのセーターがかわいい。",exTW:"粉紅色毛衣好可愛。"},
+  {jp:"オレンジ",kana:"おれんじ",romaji:"orenji",meaning:"橘色",category:"顏色",level:"COL",example:"オレンジ色の夕焼けだ。",exTW:"橘色的晚霞。"},
+  // 助詞
+  {jp:"は",kana:"は（wa）",romaji:"wa",meaning:"主題助詞",category:"助詞",level:"PAR",example:"私は台湾人です。",exTW:"我是台灣人。"},
+  {jp:"が",kana:"が（ga）",romaji:"ga",meaning:"主語助詞（強調）",category:"助詞",level:"PAR",example:"猫が好きです。",exTW:"我喜歡貓。"},
+  {jp:"を",kana:"を（wo）",romaji:"wo",meaning:"受詞助詞",category:"助詞",level:"PAR",example:"ご飯を食べます。",exTW:"吃飯。"},
+  {jp:"に",kana:"に（ni）",romaji:"ni",meaning:"方向／時間",category:"助詞",level:"PAR",example:"東京に行きます。",exTW:"去東京。"},
+  {jp:"で",kana:"で（de）",romaji:"de",meaning:"場所／手段",category:"助詞",level:"PAR",example:"電車で行きます。",exTW:"搭電車去。"},
+  {jp:"の",kana:"の（no）",romaji:"no",meaning:"所有／修飾",category:"助詞",level:"PAR",example:"私の本です。",exTW:"是我的書。"},
+  {jp:"と",kana:"と（to）",romaji:"to",meaning:"和〜一起",category:"助詞",level:"PAR",example:"友達と映画を見た。",exTW:"和朋友看了電影。"},
+  {jp:"も",kana:"も（mo）",romaji:"mo",meaning:"也〜",category:"助詞",level:"PAR",example:"私も行きます。",exTW:"我也去。"},
+  {jp:"から",kana:"から",romaji:"kara",meaning:"從〜／因為〜",category:"助詞",level:"PAR",example:"9時から始まります。",exTW:"從9點開始。"},
+  {jp:"まで",kana:"まで",romaji:"made",meaning:"到〜為止",category:"助詞",level:"PAR",example:"5時まで働きます。",exTW:"工作到5點。"},
+  // 旅遊
+  {jp:"いくらですか",kana:"いくらですか",romaji:"ikura desu ka",meaning:"多少錢？",category:"旅遊",level:"TRV",example:"これはいくらですか？",exTW:"這個多少錢？"},
+  {jp:"〜はどこですか",kana:"〜はどこですか",romaji:"~wa doko desu ka",meaning:"〜在哪裡？",category:"旅遊",level:"TRV",example:"トイレはどこですか？",exTW:"廁所在哪裡？"},
+  {jp:"写真を撮ってもいいですか",kana:"しゃしんをとってもいいですか",romaji:"shashin totte mo ii",meaning:"可以拍照嗎？",category:"旅遊",level:"TRV",example:"ここで写真を撮ってもいいですか？",exTW:"可以在這裡拍照嗎？"},
+  {jp:"予約したいです",kana:"よやくしたいです",romaji:"yoyaku shitai desu",meaning:"我想預約",category:"旅遊",level:"TRV",example:"2名で予約したいです。",exTW:"我想預約2位。"},
+  {jp:"おすすめは何ですか",kana:"おすすめはなんですか",romaji:"osusume wa nan desu ka",meaning:"有什麼推薦？",category:"旅遊",level:"TRV",example:"このお店のおすすめは何ですか？",exTW:"這家店有什麼推薦的？"},
+  {jp:"領収書をください",kana:"りょうしゅうしょをください",romaji:"ryoushusho wo kudasai",meaning:"請給我收據",category:"旅遊",level:"TRV",example:"領収書をください。",exTW:"請給我收據。"},
+  // 工作
+  {jp:"会議",kana:"かいぎ",romaji:"kaigi",meaning:"會議",category:"工作",level:"WRK",example:"午後に会議があります。",exTW:"下午有會議。"},
+  {jp:"締め切り",kana:"しめきり",romaji:"shimekiri",meaning:"截止日期",category:"工作",level:"WRK",example:"締め切りはいつですか？",exTW:"截止日期是什麼時候？"},
+  {jp:"進捗",kana:"しんちょく",romaji:"shinchoku",meaning:"進度",category:"工作",level:"WRK",example:"進捗はいかがですか？",exTW:"進度如何了？"},
+  {jp:"確認お願いします",kana:"かくにんおねがいします",romaji:"kakunin onegai shimasu",meaning:"麻煩確認一下",category:"工作",level:"WRK",example:"内容の確認お願いします。",exTW:"麻煩確認一下內容。"},
+  {jp:"取り急ぎ",kana:"とりいそぎ",romaji:"tori isogi",meaning:"先行通知",category:"工作",level:"WRK",example:"取り急ぎご連絡まで。",exTW:"先緊急通知您一聲。"},
+  {jp:"対応します",kana:"たいおうします",romaji:"taiou shimasu",meaning:"我來處理",category:"工作",level:"WRK",example:"すぐ対応します。",exTW:"我馬上處理。"},
+  // 閒聊
+  {jp:"やばい",kana:"やばい",romaji:"yabai",meaning:"超讚／糟糕",category:"閒聊",level:"CAS",example:"このラーメン、やばい美味しい！",exTW:"這拉麵超好吃！"},
+  {jp:"めっちゃ",kana:"めっちゃ",romaji:"meccha",meaning:"超〜、非常〜",category:"閒聊",level:"CAS",example:"めっちゃ疲れた〜。",exTW:"我超累的〜。"},
+  {jp:"〜じゃん",kana:"〜じゃん",romaji:"~jan",meaning:"不就是〜嘛",category:"閒聊",level:"CAS",example:"それ、いいじゃん！",exTW:"那個不錯嘛！"},
+  {jp:"だよね",kana:"だよね",romaji:"da yo ne",meaning:"對吧、就是說",category:"閒聊",level:"CAS",example:"わかる〜、だよね！",exTW:"我懂〜，就是說嘛！"},
+  {jp:"どんまい",kana:"どんまい",romaji:"don mai",meaning:"沒事啦",category:"閒聊",level:"CAS",example:"失敗しても、どんまい！",exTW:"失敗了也沒關係！"},
+  {jp:"ちょっと待って",kana:"ちょっとまって",romaji:"chotto matte",meaning:"等一下",category:"閒聊",level:"CAS",example:"ちょっと待って、今行く！",exTW:"等一下，我馬上來！"},
+  // 機械
+  {jp:"部品",kana:"ぶひん",romaji:"buhin",meaning:"零件",category:"機械",level:"MCH",example:"部品を交換してください。",exTW:"請更換零件。"},
+  {jp:"故障",kana:"こしょう",romaji:"koshou",meaning:"故障",category:"機械",level:"MCH",example:"機械が故障しました。",exTW:"機器故障了。"},
+  {jp:"点検",kana:"てんけん",romaji:"tenken",meaning:"點檢",category:"機械",level:"MCH",example:"定期点検を行います。",exTW:"進行定期檢查。"},
+  {jp:"精度",kana:"せいど",romaji:"seido",meaning:"精度",category:"機械",level:"MCH",example:"加工精度が重要です。",exTW:"加工精度很重要。"},
+  {jp:"公差",kana:"こうさ",romaji:"kousa",meaning:"公差",category:"機械",level:"MCH",example:"公差は±0.1mmです。",exTW:"公差是±0.1mm。"},
+  {jp:"図面",kana:"ずめん",romaji:"zumen",meaning:"圖面",category:"機械",level:"MCH",example:"図面通りに加工してください。",exTW:"請依照圖面加工。"},
+  {jp:"溶接",kana:"ようせつ",romaji:"yousetsu",meaning:"焊接",category:"機械",level:"MCH",example:"溶接部分を検査します。",exTW:"檢查焊接部位。"},
+  {jp:"組み立て",kana:"くみたて",romaji:"kumitate",meaning:"組裝",category:"機械",level:"MCH",example:"部品を組み立てる。",exTW:"組裝零件。"},
+  // 慣用語
+  {jp:"勘弁してください",kana:"かんべんしてください",romaji:"kanben shite kudasai",meaning:"請饒了我／算了吧",category:"慣用語",level:"IDM",example:"もう勘弁してください、疲れました。",exTW:"求你饒了我吧，我累了。"},
+  {jp:"腹が立つ",kana:"はらがたつ",romaji:"hara ga tatsu",meaning:"生氣",category:"慣用語",level:"IDM",example:"あんな言い方をされると腹が立つ。",exTW:"被那樣說真的很生氣。"},
+  {jp:"気が合う",kana:"きがあう",romaji:"ki ga au",meaning:"投緣／合得來",category:"慣用語",level:"IDM",example:"あの人とは気が合う。",exTW:"跟那個人很投緣。"},
+  {jp:"水に流す",kana:"みずにながす",romaji:"mizu ni nagasu",meaning:"既往不咎",category:"慣用語",level:"IDM",example:"過去のことは水に流しましょう。",exTW:"過去的事就既往不咎吧。"},
+  {jp:"足を引っ張る",kana:"あしをひっぱる",romaji:"ashi wo hipparu",meaning:"扯後腿",category:"慣用語",level:"IDM",example:"チームの足を引っ張りたくない。",exTW:"不想扯團隊的後腿。"},
+  {jp:"耳が痛い",kana:"みみがいたい",romaji:"mimi ga itai",meaning:"說到痛處",category:"慣用語",level:"IDM",example:"それを聞くと耳が痛い。",exTW:"聽到這句話真的說到我痛處了。"},
+  {jp:"手が離せない",kana:"てがはなせない",romaji:"te ga hanasenai",meaning:"抽不開身",category:"慣用語",level:"IDM",example:"今ちょっと手が離せないんです。",exTW:"我現在有點抽不開身。"},
+  {jp:"気が重い",kana:"きがおもい",romaji:"ki ga omoi",meaning:"心情沉重",category:"慣用語",level:"IDM",example:"明日の会議を思うと気が重い。",exTW:"一想到明天的會議心情就很沉重。"},
+  {jp:"頭が上がらない",kana:"あたまがあがらない",romaji:"atama ga agaranai",meaning:"抬不起頭",category:"慣用語",level:"IDM",example:"彼女には頭が上がらない。",exTW:"在她面前我完全抬不起頭。"},
+  {jp:"肩の荷が下りる",kana:"かたのにがおりる",romaji:"kata no ni ga oriru",meaning:"如釋重負",category:"慣用語",level:"IDM",example:"試験が終わって肩の荷が下りた。",exTW:"考試結束後如釋重負。"},
+  {jp:"骨を折る",kana:"ほねをおる",romaji:"hone wo oru",meaning:"費心費力",category:"慣用語",level:"IDM",example:"彼はいつも骨を折ってくれる。",exTW:"他總是費心費力地幫忙。"},
+  {jp:"猫をかぶる",kana:"ねこをかぶる",romaji:"neko wo kaburu",meaning:"裝乖／假裝",category:"慣用語",level:"IDM",example:"あの子、人前では猫をかぶってる。",exTW:"那孩子在人前裝乖。"},
+  {jp:"口が軽い",kana:"くちがかるい",romaji:"kuchi ga karui",meaning:"嘴巴不緊",category:"慣用語",level:"IDM",example:"彼女は口が軽いから秘密を話さないで。",exTW:"她嘴巴不緊，別跟她說秘密。"},
+  {jp:"顔が広い",kana:"かおがひろい",romaji:"kao ga hiroi",meaning:"交際廣",category:"慣用語",level:"IDM",example:"部長は顔が広くていつも助かる。",exTW:"部長交際廣，真是幫了大忙。"},
+  {jp:"二の足を踏む",kana:"にのあしをふむ",romaji:"ni no ashi wo fumu",meaning:"躊躇猶豫",category:"慣用語",level:"IDM",example:"高いから買うのに二の足を踏んでいる。",exTW:"因為很貴，買的時候有點猶豫。"},
+  {jp:"胸がいっぱい",kana:"むねがいっぱい",romaji:"mune ga ippai",meaning:"心裡滿滿的",category:"慣用語",level:"IDM",example:"感謝の気持ちで胸がいっぱいです。",exTW:"心裡滿滿都是感謝之情。"},
+  {jp:"羽を伸ばす",kana:"はねをのばす",romaji:"hane wo nobasu",meaning:"放鬆自在",category:"慣用語",level:"IDM",example:"連休は思いきり羽を伸ばしたい。",exTW:"連假想盡情地放鬆一下。"},
+  {jp:"手を貸す",kana:"てをかす",romaji:"te wo kasu",meaning:"幫一把",category:"慣用語",level:"IDM",example:"ちょっと手を貸してくれますか？",exTW:"可以幫我一把嗎？"},
+  {jp:"目を丸くする",kana:"めをまるくする",romaji:"me wo maruku suru",meaning:"驚訝得睜大眼",category:"慣用語",level:"IDM",example:"その結果を聞いて目を丸くした。",exTW:"聽到那個結果驚訝得睜大了眼。"},
+  {jp:"お手柔らかに",kana:"おてやわらかに",romaji:"ote yawaraka ni",meaning:"請手下留情",category:"慣用語",level:"IDM",example:"初めてなのでお手柔らかにお願いします。",exTW:"因為是第一次，請手下留情。"},
+  // 慣用語・身體部位
+  {jp:"目が高い",kana:"めがたかい",romaji:"me ga takai",meaning:"眼光高／識貨",category:"慣用語",level:"IDM",example:"さすが、お目が高い！",exTW:"不愧是您，真識貨！"},
+  {jp:"口を出す",kana:"くちをだす",romaji:"kuchi wo dasu",meaning:"插嘴",category:"慣用語",level:"IDM",example:"他人のことに口を出すな。",exTW:"別插手別人的事。"},
+  {jp:"鼻につく",kana:"はなにつく",romaji:"hana ni tsuku",meaning:"令人討厭",category:"慣用語",level:"IDM",example:"自慢話ばかりで鼻につく。",exTW:"老是說大話，真令人討厭。"},
+  {jp:"歯が立たない",kana:"はがたたない",romaji:"ha ga tatanai",meaning:"無法匹敵",category:"慣用語",level:"IDM",example:"彼女には歯が立たない。",exTW:"根本無法跟她匹敵。"},
+  {jp:"腰が低い",kana:"こしがひくい",romaji:"koshi ga hikui",meaning:"態度謙遜",category:"慣用語",level:"IDM",example:"あの社長は腰が低くて好感が持てる。",exTW:"那位社長態度謙遜，讓人好感倍增。"},
+  {jp:"手を焼く",kana:"てをやく",romaji:"te wo yaku",meaning:"傷腦筋",category:"慣用語",level:"IDM",example:"あの子には本当に手を焼いている。",exTW:"那孩子真的讓我很傷腦筋。"},
+  {jp:"足が出る",kana:"あしがでる",romaji:"ashi ga deru",meaning:"超出預算",category:"慣用語",level:"IDM",example:"旅行で足が出てしまった。",exTW:"旅行超出預算了。"},
+  {jp:"目をつぶる",kana:"めをつぶる",romaji:"me wo tsuburu",meaning:"睜一隻眼閉一隻眼",category:"慣用語",level:"IDM",example:"今回だけは目をつぶってあげる。",exTW:"就這次睜一隻眼閉一隻眼了。"},
+  {jp:"口がうまい",kana:"くちがうまい",romaji:"kuchi ga umai",meaning:"嘴甜／很會說話",category:"慣用語",level:"IDM",example:"彼は口がうまくて信用できない。",exTW:"他嘴很甜，讓人難以信任。"},
+  {jp:"首になる",kana:"くびになる",romaji:"kubi ni naru",meaning:"被開除",category:"慣用語",level:"IDM",example:"遅刻ばかりで首になった。",exTW:"一直遲到結果被開除了。"},
+  // 慣用語・情緒心情
+  {jp:"胸がドキドキする",kana:"むねがどきどきする",romaji:"mune ga doki doki suru",meaning:"心跳加速",category:"慣用語",level:"IDM",example:"告白の前、胸がドキドキした。",exTW:"告白前心跳加速。"},
+  {jp:"気が気でない",kana:"きがきでない",romaji:"ki ga ki de nai",meaning:"坐立不安",category:"慣用語",level:"IDM",example:"試験の結果が気が気でない。",exTW:"考試結果讓我坐立不安。"},
+  {jp:"胸がすく",kana:"むねがすく",romaji:"mune ga suku",meaning:"心情舒暢",category:"慣用語",level:"IDM",example:"思い切り言えて胸がすいた。",exTW:"把話說出來後心情舒暢多了。"},
+  {jp:"心が折れる",kana:"こころがおれる",romaji:"kokoro ga oreru",meaning:"心灰意冷",category:"慣用語",level:"IDM",example:"失敗続きで心が折れそうだ。",exTW:"一直失敗快要心灰意冷了。"},
+  {jp:"気が散る",kana:"きがちる",romaji:"ki ga chiru",meaning:"分心",category:"慣用語",level:"IDM",example:"騒がしくて気が散る。",exTW:"太吵了讓我分心。"},
+  {jp:"浮き足立つ",kana:"うきあしだつ",romaji:"ukiashi datsu",meaning:"慌亂不安",category:"慣用語",level:"IDM",example:"急なニュースに浮き足立った。",exTW:"突然的消息讓大家慌亂不安。"},
+  {jp:"天にも昇る気持ち",kana:"てんにものぼるきもち",romaji:"ten ni mo noboru kimochi",meaning:"飄飄欲仙",category:"慣用語",level:"IDM",example:"合格して天にも昇る気持ちだ。",exTW:"合格了，感覺飄飄欲仙。"},
+  // 慣用語・職場人際
+  {jp:"根回しをする",kana:"ねまわしをする",romaji:"nemawashi wo suru",meaning:"事先打好招呼",category:"慣用語",level:"IDM",example:"会議の前に根回しをしておいた。",exTW:"會議前事先打好招呼了。"},
+  {jp:"顔を立てる",kana:"かおをたてる",romaji:"kao wo tateru",meaning:"給面子",category:"慣用語",level:"IDM",example:"先輩の顔を立てて従った。",exTW:"給前輩面子就順從了。"},
+  {jp:"話が弾む",kana:"はなしがはずむ",romaji:"hanashi ga hazumu",meaning:"話聊得起勁",category:"慣用語",level:"IDM",example:"久しぶりに会って話が弾んだ。",exTW:"久別重逢聊得非常起勁。"},
+  {jp:"板挟みになる",kana:"いたばさみになる",romaji:"itabasami ni naru",meaning:"夾在中間兩難",category:"慣用語",level:"IDM",example:"上司と部下の間で板挟みになった。",exTW:"夾在上司和部下之間兩難。"},
+  {jp:"お茶を濁す",kana:"おちゃをにごす",romaji:"ocha wo nigosu",meaning:"敷衍了事",category:"慣用語",level:"IDM",example:"適当な返事でお茶を濁した。",exTW:"用隨便的回答敷衍了事。"},
+  {jp:"太鼓を叩く",kana:"たいこをたたく",romaji:"taiko wo tataku",meaning:"拍馬屁",category:"慣用語",level:"IDM",example:"彼はいつも上司の太鼓を叩いている。",exTW:"他總是在拍上司馬屁。"},
+  {jp:"気が置けない",kana:"きがおけない",romaji:"ki ga okenai",meaning:"不必客氣的（摯友）",category:"慣用語",level:"IDM",example:"気が置けない友人と飲む。",exTW:"和不必客氣的好友喝酒。"},
+  // 慣用語・動物
+  {jp:"犬猿の仲",kana:"けんえんのなか",romaji:"ken'en no naka",meaning:"水火不容",category:"慣用語",level:"IDM",example:"あの二人は犬猿の仲だ。",exTW:"那兩個人水火不容。"},
+  {jp:"馬が合う",kana:"うまがあう",romaji:"uma ga au",meaning:"合得來",category:"慣用語",level:"IDM",example:"あの人とは馬が合う。",exTW:"跟那個人很合得來。"},
+  {jp:"猫の手も借りたい",kana:"ねこのてもかりたい",romaji:"neko no te mo karitai",meaning:"忙到想借貓手",category:"慣用語",level:"IDM",example:"年末は猫の手も借りたいほど忙しい。",exTW:"年底忙到連貓的手都想借。"},
+  {jp:"犬の遠吠え",kana:"いぬのとおぼえ",romaji:"inu no tooboye",meaning:"壯膽亂嚷嚷",category:"慣用語",level:"IDM",example:"陰で文句を言うのは犬の遠吠えだ。",exTW:"在背後抱怨不過是壯膽嚷嚷。"},
+  {jp:"馬の耳に念仏",kana:"うまのみみにねんぶつ",romaji:"uma no mimi ni nenbutsu",meaning:"對牛彈琴",category:"慣用語",level:"IDM",example:"言っても馬の耳に念仏だ。",exTW:"說了也是對牛彈琴。"},
+  {jp:"虎の威を借る狐",kana:"とらのいをかるきつね",romaji:"tora no i wo karu kitsune",meaning:"狐假虎威",category:"慣用語",level:"IDM",example:"上司の名前を使うのは虎の威を借る狐だ。",exTW:"借上司名號就是狐假虎威。"},
+  {jp:"蛙の子は蛙",kana:"かえるのこはかえる",romaji:"kaeru no ko wa kaeru",meaning:"有其父必有其子",category:"慣用語",level:"IDM",example:"蛙の子は蛙、そっくりだね。",exTW:"有其父必有其子，真像啊。"},
+  {jp:"鶴の一声",kana:"つるのひとこえ",romaji:"tsuru no hitokoe",meaning:"一言定奪",category:"慣用語",level:"IDM",example:"社長の鶴の一声で決まった。",exTW:"社長一言定奪。"},
+  // 慣用語・身體部位（追加）
+  {jp:"肩を持つ",kana:"かたをもつ",romaji:"kata wo motsu",meaning:"偏袒某人",category:"慣用語",level:"IDM",example:"いつも弟の肩を持つね。",exTW:"你總是偏袒弟弟呢。"},
+  {jp:"腹を割る",kana:"はらをわる",romaji:"hara wo waru",meaning:"推心置腹",category:"慣用語",level:"IDM",example:"腹を割って話しましょう。",exTW:"我們推心置腹地談吧。"},
+  {jp:"目から鼻へ抜ける",kana:"めからはなへぬける",romaji:"me kara hana e nukeru",meaning:"機靈過人",category:"慣用語",level:"IDM",example:"あの子は目から鼻へ抜けるほど賢い。",exTW:"那孩子機靈得很。"},
+  {jp:"手も足も出ない",kana:"てもあしもでない",romaji:"te mo ashi mo denai",meaning:"束手無策",category:"慣用語",level:"IDM",example:"難しすぎて手も足も出ない。",exTW:"太難了完全束手無策。"},
+  {jp:"口が裂けても",kana:"くちがさけても",romaji:"kuchi ga sakete mo",meaning:"打死也不說",category:"慣用語",level:"IDM",example:"口が裂けてもそれは言えない。",exTW:"打死我也不會說那件事。"},
+  {jp:"目が覚める",kana:"めがさめる",romaji:"me ga sameru",meaning:"如夢初醒",category:"慣用語",level:"IDM",example:"失敗して目が覚めた。",exTW:"經歷失敗後如夢初醒。"},
+  {jp:"足元を見る",kana:"あしもとをみる",romaji:"ashimoto wo miru",meaning:"趁人之危",category:"慣用語",level:"IDM",example:"困っているとわかって足元を見てきた。",exTW:"知道我有困難就趁機敲竹槓。"},
+  {jp:"胸を借りる",kana:"むねをかりる",romaji:"mune wo kariru",meaning:"請對方讓自己練習",category:"慣用語",level:"IDM",example:"先輩に胸を借りてみます。",exTW:"請前輩讓我練習一下。"},
+  // 慣用語・情緒心情（追加）
+  {jp:"気が抜ける",kana:"きがぬける",romaji:"ki ga nukeru",meaning:"鬆了一口氣／洩氣",category:"慣用語",level:"IDM",example:"試験が終わって気が抜けた。",exTW:"考試結束後鬆了一口氣。"},
+  {jp:"胸に刺さる",kana:"むねにささる",romaji:"mune ni sasaru",meaning:"刺中內心",category:"慣用語",level:"IDM",example:"その言葉は胸に刺さった。",exTW:"那句話深深刺中了我的內心。"},
+  {jp:"うんざりする",kana:"うんざりする",romaji:"unzari suru",meaning:"厭煩透了",category:"慣用語",level:"IDM",example:"毎日同じ繰り返しにうんざりする。",exTW:"每天重複同樣的事，厭煩透了。"},
+  {jp:"気が晴れる",kana:"きがはれる",romaji:"ki ga hareru",meaning:"心情開朗",category:"慣用語",level:"IDM",example:"散歩したら気が晴れた。",exTW:"散步之後心情開朗了。"},
+  {jp:"胸が痛い",kana:"むねがいたい",romaji:"mune ga itai",meaning:"心疼／難受",category:"慣用語",level:"IDM",example:"その話を聞いて胸が痛い。",exTW:"聽到那件事心裡很難受。"},
+  {jp:"気が進まない",kana:"きがすすまない",romaji:"ki ga susumanai",meaning:"不太想做",category:"慣用語",level:"IDM",example:"あの会議、気が進まないな。",exTW:"那個會議，真不太想去。"},
+  {jp:"舞い上がる",kana:"まいあがる",romaji:"mai agaru",meaning:"得意忘形",category:"慣用語",level:"IDM",example:"褒められて舞い上がってしまった。",exTW:"被稱讚就得意忘形了。"},
+  {jp:"やるせない",kana:"やるせない",romaji:"yarusenai",meaning:"無可奈何的悲傷",category:"慣用語",level:"IDM",example:"何もできなくてやるせない気持ちだ。",exTW:"什麼都做不了，感到無比無奈悲傷。"},
+  // 慣用語・職場人際（追加）
+  {jp:"根に持つ",kana:"ねにもつ",romaji:"ne ni motsu",meaning:"懷恨在心",category:"慣用語",level:"IDM",example:"あのことをまだ根に持っているの？",exTW:"那件事你還在懷恨在心嗎？"},
+  {jp:"水を差す",kana:"みずをさす",romaji:"mizu wo sasu",meaning:"潑冷水",category:"慣用語",level:"IDM",example:"楽しい雰囲気に水を差さないで。",exTW:"別在這歡樂的氣氛裡潑冷水。"},
+  {jp:"顔に泥を塗る",kana:"かおにどろをぬる",romaji:"kao ni doro wo nuru",meaning:"讓人丟臉",category:"慣用語",level:"IDM",example:"親の顔に泥を塗るな。",exTW:"別讓父母丟臉。"},
+  {jp:"手の内を見せる",kana:"てのうちをみせる",romaji:"te no uchi wo miseru",meaning:"攤牌／露底",category:"慣用語",level:"IDM",example:"まだ手の内を見せるな。",exTW:"還不要攤牌。"},
+  {jp:"話を切り出す",kana:"はなしをきりだす",romaji:"hanashi wo kiridasu",meaning:"開口提起話題",category:"慣用語",level:"IDM",example:"なかなか話を切り出せなかった。",exTW:"一直沒辦法開口提起這件事。"},
+  {jp:"お世辞を言う",kana:"おせじをいう",romaji:"oseji wo iu",meaning:"說客套話",category:"慣用語",level:"IDM",example:"お世辞でも嬉しい。",exTW:"就算是客套話也很開心。"},
+  {jp:"話が通じない",kana:"はなしがつうじない",romaji:"hanashi ga tsuujinai",meaning:"話不投機",category:"慣用語",level:"IDM",example:"あの人とは話が通じない。",exTW:"跟那個人話不投機。"},
+  {jp:"一目置く",kana:"いちもくおく",romaji:"ichimoku oku",meaning:"另眼相看",category:"慣用語",level:"IDM",example:"彼の実力には一目置いている。",exTW:"對他的實力另眼相看。"},
+  // 慣用語・動物（追加）
+  {jp:"猫に小判",kana:"ねこにこばん",romaji:"neko ni koban",meaning:"給了也不懂欣賞",category:"慣用語",level:"IDM",example:"彼に名画を見せても猫に小判だ。",exTW:"給他看名畫也是白費，不懂欣賞。"},
+  {jp:"井の中の蛙",kana:"いのなかのかわず",romaji:"i no naka no kawazu",meaning:"井底之蛙",category:"慣用語",level:"IDM",example:"海外に出て井の中の蛙だったと気づいた。",exTW:"出國後才發現自己是井底之蛙。"},
+  {jp:"鳥肌が立つ",kana:"とりはだがたつ",romaji:"torihada ga tatsu",meaning:"起雞皮疙瘩",category:"慣用語",level:"IDM",example:"その演奏に鳥肌が立った。",exTW:"那場演奏讓我起了雞皮疙瘩。"},
+  {jp:"雀の涙",kana:"すずめのなみだ",romaji:"suzume no namida",meaning:"少得可憐",category:"慣用語",level:"IDM",example:"今月のボーナスは雀の涙だった。",exTW:"這個月的獎金少得可憐。"},
+  {jp:"蛇の道は蛇",kana:"じゃのみちはじゃ",romaji:"ja no michi wa ja",meaning:"同行知同行",category:"慣用語",level:"IDM",example:"蛇の道は蛇、同業者に聞くのが一番。",exTW:"同行知同行，問同業最準。"},
+  {jp:"豚もおだてりゃ木に登る",kana:"ぶたもおだてりゃきにのぼる",romaji:"buta mo odaterya ki ni noboru",meaning:"人受不了讚美",category:"慣用語",level:"IDM",example:"豚もおだてりゃ木に登る、褒めれば何でもやる。",exTW:"人只要被捧，什麼都肯做。"},
+  {jp:"犬も歩けば棒に当たる",kana:"いぬもあるけばぼうにあたる",romaji:"inu mo arukeba bou ni ataru",meaning:"出門就有意外收穫",category:"慣用語",level:"IDM",example:"犬も歩けば棒に当たる、行ってみよう！",exTW:"出門說不定有意外收穫，去看看吧！"},
+  {jp:"虎穴に入らずんば虎子を得ず",kana:"こけつにいらずんばこじをえず",romaji:"koketsu ni irazunba koji wo ezu",meaning:"不入虎穴焉得虎子",category:"慣用語",level:"IDM",example:"虎穴に入らずんば虎子を得ず、挑戦しよう。",exTW:"不入虎穴焉得虎子，來挑戰吧。"},
+];
+
+const GROUPS=[
+  {id:"ALL",label:"全部",icon:"📚",color:"#888"},
+  {id:"N5", label:"N5 單字",icon:"🟡",color:"#c8a03a",filter:v=>v.level==="N5"},
+  {id:"S5", label:"N5 句型",icon:"📖",color:"#dab855",filter:v=>v.level==="S5"},
+  {id:"N4", label:"N4 單字",icon:"🔴",color:"#e05a4a",filter:v=>v.level==="N4"},
+  {id:"S4", label:"N4 句型",icon:"📕",color:"#e07a6a",filter:v=>v.level==="S4"},
+  {id:"N3", label:"N3 單字",icon:"🟢",color:"#7dba7d",filter:v=>v.level==="N3"},
+  {id:"S3", label:"N3 句型",icon:"📗",color:"#9dd89d",filter:v=>v.level==="S3"},
+  {id:"DAI",label:"日常用語",icon:"💬",color:"#6aaae0",filter:v=>v.level==="DAI"},
+  {id:"ADV",label:"進階敬語",icon:"🎩",color:"#c07ae0",filter:v=>v.level==="ADV"},
+  {id:"GEO",label:"日本地名",icon:"📍",color:"#4ecdb4",filter:v=>v.level==="GEO"},
+  {id:"COL",label:"顏色",icon:"🎨",color:"#e06aa0",filter:v=>v.level==="COL"},
+  {id:"PAR",label:"助詞",icon:"🔗",color:"#8888d8",filter:v=>v.level==="PAR"},
+  {id:"TRV",label:"旅遊用語",icon:"✈️",color:"#4ec8c8",filter:v=>v.level==="TRV"},
+  {id:"WRK",label:"工作用語",icon:"💼",color:"#9090d0",filter:v=>v.level==="WRK"},
+  {id:"CAS",label:"閒聊用語",icon:"😄",color:"#d4a840",filter:v=>v.level==="CAS"},
+  {id:"MCH",label:"機械用語",icon:"⚙️",color:"#aaaaaa",filter:v=>v.level==="MCH"},
+  {id:"IDM",label:"慣用語",icon:"🈳",color:"#e8944a",filter:v=>v.level==="IDM"},
+];
+
+const BM={
+  N5:{bg:"rgba(184,146,42,0.25)",color:"#c8a03a",label:"N5"},
+  N4:{bg:"rgba(192,57,43,0.25)",color:"#e05a4a",label:"N4"},
+  N3:{bg:"rgba(100,160,100,0.25)",color:"#7dba7d",label:"N3"},
+  S5:{bg:"rgba(218,184,85,0.25)",color:"#dab855",label:"N5句型"},
+  S4:{bg:"rgba(224,122,106,0.25)",color:"#e07a6a",label:"N4句型"},
+  S3:{bg:"rgba(157,216,157,0.25)",color:"#9dd89d",label:"N3句型"},
+  DAI:{bg:"rgba(80,140,220,0.25)",color:"#6aaae0",label:"日常"},
+  ADV:{bg:"rgba(160,100,200,0.25)",color:"#c07ae0",label:"進階"},
+  GEO:{bg:"rgba(40,160,130,0.25)",color:"#4ecdb4",label:"地名"},
+  COL:{bg:"rgba(220,80,150,0.25)",color:"#e06aa0",label:"顏色"},
+  PAR:{bg:"rgba(100,100,200,0.25)",color:"#8888d8",label:"助詞"},
+  TRV:{bg:"rgba(60,180,180,0.25)",color:"#4ec8c8",label:"旅遊"},
+  WRK:{bg:"rgba(100,100,180,0.25)",color:"#9090d0",label:"工作"},
+  CAS:{bg:"rgba(200,160,60,0.25)",color:"#d4a840",label:"閒聊"},
+  MCH:{bg:"rgba(140,140,140,0.25)",color:"#aaaaaa",label:"機械"},
+  IDM:{bg:"rgba(232,148,74,0.25)",color:"#e8944a",label:"慣用語"},
+};
+
+// ══════════════════════════════════════════
+//  STATE
+// ══════════════════════════════════════════
+const LS_KEY='jp_learned_v1';
+let learned=new Set();
+let activeIds=new Set(['ALL']);
+let history=[0];
+let histPos=0;
+let ratio=0;
+let dragging=false,startX=0,startRatio=0;
+let speaking=false;
+
+// Load from localStorage
+try{
+  const raw=localStorage.getItem(LS_KEY);
+  if(raw){
+    const arr=JSON.parse(raw);
+    learned=new Set(arr.filter(i=>i<vocab.length));
+  }
+}catch(e){}
+
+function save(){
+  try{ localStorage.setItem(LS_KEY,JSON.stringify([...learned])); }catch(e){}
+}
+
+// ══════════════════════════════════════════
+//  HELPERS
+// ══════════════════════════════════════════
+function getFiltered(){
+  // 地圖篩選模式
+  if(activeIds.has('GEO_REGION')&&mapFilterRegion){
+    return vocab.map((w,i)=>({w,i}))
+      .filter(({w})=>w.level==='GEO'&&w.region===mapFilterRegion)
+      .map(({i})=>i);
+  }
+  return vocab.map((w,i)=>({w,i})).filter(({w})=>{
+    if(activeIds.has('ALL')) return true;
+    return [...activeIds].some(id=>{
+      const g=GROUPS.find(g=>g.id===id);
+      return g&&g.filter&&g.filter(w);
+    });
+  }).map(({i})=>i);
+}
+
+function pickNext(excl){
+  const f=getFiltered();
+  const pool=f.length>1?f.filter(i=>i!==excl):f;
+  const tot=pool.reduce((s,i)=>s+(learned.has(i)?1:6),0);
+  let r=Math.random()*tot;
+  for(const i of pool){ r-=(learned.has(i)?1:6); if(r<=0) return i; }
+  return pool[pool.length-1];
+}
+
+function encode(set){
+  if(!set||set.size===0) return '';
+  const arr=[...set].sort((a,b)=>a-b);
+  const bytes=new Uint8Array(Math.ceil((arr[arr.length-1]+1)/8));
+  arr.forEach(i=>{bytes[i>>3]|=(1<<(i&7));});
+  return btoa(String.fromCharCode(...bytes)).replace(/=/g,'');
+}
+function decode(s){
+  if(!s||!s.trim()) return new Set();
+  try{
+    const bin=atob(s.trim());
+    const set=new Set();
+    for(let i=0;i<bin.length;i++){
+      const b=bin.charCodeAt(i);
+      for(let j=0;j<8;j++) if(b&(1<<j)) set.add(i*8+j);
+    }
+    return new Set([...set].filter(i=>i<vocab.length));
+  }catch(e){return new Set();}
+}
+
+// ══════════════════════════════════════════
+//  RENDER
+// ══════════════════════════════════════════
+function renderCard(){
+  const idx=history[histPos];
+  const v=vocab[idx];
+  const badge=BM[v.level]||BM.N5;
+  const isL=learned.has(idx);
+
+  // badge
+  const lb=document.getElementById('level-badge');
+  lb.textContent=badge.label;
+  lb.style.background=badge.bg;
+  lb.style.color=badge.color;
+
+  document.getElementById('card-cat').textContent=v.category;
+  const jp=document.getElementById('card-jp');
+  jp.textContent=v.jp;
+  // dynamic font size
+  const len=v.jp.length;
+  jp.style.fontSize=len>8?'clamp(1.2rem,5vw,1.9rem)':len>4?'clamp(1.6rem,7vw,2.4rem)':'clamp(1.8rem,9vw,2.7rem)';
+  document.getElementById('card-kana').textContent=v.kana;
+  document.getElementById('rev-meaning').textContent=v.meaning;
+  document.getElementById('rev-meaning').style.fontSize=v.meaning.length>10?'clamp(1rem,3.5vw,1.4rem)':'clamp(1.1rem,5vw,1.75rem)';
+  document.getElementById('rev-romaji').textContent=v.romaji;
+  document.getElementById('rev-example').textContent=v.example;
+  document.getElementById('rev-tw').textContent=v.exTW;
+
+  // learned state
+  document.getElementById('learned-border').classList.toggle('show',isL);
+  document.getElementById('learned-tag').classList.toggle('show',isL);
+  document.getElementById('btn-learned').textContent=isL?'✓ 學會了':'標記學會';
+  document.getElementById('btn-learned').className='btn-learned'+(isL?' active':'');
+  if(isL){
+    document.getElementById('btn-learned').style.borderColor='rgba(0,200,80,0.4)';
+    document.getElementById('btn-learned').style.background='rgba(0,180,80,0.15)';
+    document.getElementById('btn-learned').style.color='#4dc87a';
+  }else{
+    document.getElementById('btn-learned').style.borderColor='rgba(255,255,255,0.1)';
+    document.getElementById('btn-learned').style.background='rgba(255,255,255,0.05)';
+    document.getElementById('btn-learned').style.color='rgba(255,255,255,0.4)';
+  }
+
+  document.getElementById('btn-back').disabled=(histPos===0);
+
+  updateCounter();
+}
+
+function updateCounter(){
+  const n=learned.size;
+  document.getElementById('top-count').textContent=n;
+  document.getElementById('menu-count').textContent=n;
+  document.getElementById('menu-total').textContent=vocab.length;
+  document.getElementById('menu-bar').style.width=(n/vocab.length*100)+'%';
+}
+
+function setSlider(val){
+  ratio=Math.max(0,Math.min(1,val));
+  const pct=Math.round((1-ratio)*100);
+  document.getElementById('front').style.clipPath=`inset(0 ${pct}% 0 0)`;
+  document.getElementById('handle').style.left=(ratio*100)+'%';
+  document.getElementById('slide-hint').style.opacity=ratio<0.05?'1':'0';
+}
+
+function animateCard(dir,cb){
+  const wrap=document.getElementById('card-wrap');
+  wrap.classList.add(dir==='fwd'?'anim-fwd':'anim-back');
+  setTimeout(()=>{
+    cb();
+    setSlider(0);
+    renderCard();
+    wrap.classList.remove('anim-fwd','anim-back');
+  },190);
+}
+
+// ── Navigation ──
+function go(dir){
+  if(dir==='back'&&histPos===0) return;
+  animateCard(dir,()=>{
+    if(dir==='fwd'){
+      if(histPos<history.length-1){ histPos++; }
+      else{
+        const n=pickNext(history[histPos]);
+        history=history.slice(0,histPos+1);
+        history.push(n);
+        histPos++;
+      }
+    } else { histPos--; }
+  });
+}
+
+// ── Learned ──
+function toggleLearned(){
+  const idx=history[histPos];
+  if(learned.has(idx)){
+    learned.delete(idx);
+  } else {
+    learned.add(idx);
+    // flash
+    const f=document.getElementById('flash');
+    f.classList.add('show');
+    setTimeout(()=>f.classList.remove('show'),900);
+  }
+  save();
+  renderCard();
+  updateFilterHint();
+}
+
+// ── Speak ──
+function speak(){
+  if(!window.speechSynthesis) return;
+  speechSynthesis.cancel();
+  const v=vocab[history[histPos]];
+  const text=v.jp.startsWith('〜')?v.example:v.jp;
+  const u=new SpeechSynthesisUtterance(text);
+  u.lang='ja-JP';u.rate=0.82;u.pitch=1.05;
+  speaking=true;
+  document.getElementById('btn-speak').className='btn-speak speaking';
+  document.getElementById('btn-speak').textContent='🔊';
+  u.onend=u.onerror=()=>{
+    speaking=false;
+    document.getElementById('btn-speak').className='btn-speak';
+    document.getElementById('btn-speak').textContent='🔈';
+  };
+  speechSynthesis.speak(u);
+}
+
+// ══════════════════════════════════════════
+//  DRAG
+// ══════════════════════════════════════════
+const card=document.getElementById('card');
+
+card.addEventListener('mousedown',e=>{
+  dragging=true;startX=e.clientX;startRatio=ratio;
+  e.preventDefault();
+});
+window.addEventListener('mousemove',e=>{
+  if(!dragging) return;
+  setSlider(startRatio+(e.clientX-startX)/card.offsetWidth);
+});
+window.addEventListener('mouseup',()=>{
+  if(!dragging) return;
+  dragging=false;
+  setSlider(ratio<0.08?0:ratio>0.88?1:ratio);
+});
+
+card.addEventListener('touchstart',e=>{
+  dragging=true;startX=e.touches[0].clientX;startRatio=ratio;
+},{passive:true});
+window.addEventListener('touchmove',e=>{
+  if(!dragging) return;
+  e.preventDefault();
+  setSlider(startRatio+(e.touches[0].clientX-startX)/card.offsetWidth);
+},{passive:false});
+window.addEventListener('touchend',()=>{
+  if(!dragging) return;
+  dragging=false;
+  setSlider(ratio<0.08?0:ratio>0.88?1:ratio);
+});
+
+// ══════════════════════════════════════════
+//  MENU
+// ══════════════════════════════════════════
+function buildMenu(){
+  const list=document.getElementById('menu-list');
+  list.innerHTML='';
+  GROUPS.forEach(g=>{
+    const isAct=activeIds.has(g.id);
+    const all=g.id==='ALL'?vocab.map((_,i)=>i):vocab.map((w,i)=>({w,i})).filter(({w})=>g.filter&&g.filter(w)).map(({i})=>i);
+    const tot=all.length,don=all.filter(i=>learned.has(i)).length;
+
+    const item=document.createElement('div');
+    item.className='menu-item'+(isAct?' active':'');
+    item.style.borderLeftColor=isAct?g.color:'transparent';
+
+    item.innerHTML=`
+      <div class="menu-check" style="border-color:${isAct?g.color:'rgba(255,255,255,0.18)'};background:${isAct?g.color:'transparent'}">${isAct?'✓':''}</div>
+      <span class="menu-icon">${g.icon}</span>
+      <div style="flex:1;min-width:0">
+        <div class="menu-label">${g.label}</div>
+        ${g.id!=='ALL'?`<div class="menu-prog">
+          <div class="menu-prog-bar"><div class="menu-prog-fill" style="width:${tot>0?(don/tot*100):0}%;background:${g.color}"></div></div>
+          <span class="menu-prog-num">${don}/${tot}</span>
+        </div>`:''}
+      </div>`;
+
+    item.addEventListener('click',()=>{
+      // 清掉地圖篩選
+      mapFilterRegion=null;
+      if(g.id==='ALL'){ activeIds=new Set(['ALL']); }
+      else {
+        activeIds.delete('ALL');
+        activeIds.delete('GEO_REGION');
+        if(activeIds.has(g.id)) activeIds.delete(g.id);
+        else activeIds.add(g.id);
+        if(activeIds.size===0) activeIds=new Set(['ALL']);
+      }
+      // jump to first card in filtered set
+      const f=getFiltered();
+      history=[f[0]??0];histPos=0;
+      setSlider(0);
+      renderCard();
+      buildMenu();
+      updateFilterHint();
+    });
+    list.appendChild(item);
+  });
+}
+
+function updateFilterHint(){
+  const el=document.getElementById('filter-hint');
+  if(activeIds.has('GEO_REGION')&&mapFilterRegion){
+    const f=getFiltered();
+    const don=f.filter(i=>learned.has(i)).length;
+    el.innerHTML=`📍 ${mapFilterRegion} &nbsp;<span style="color:var(--gold);font-weight:600">${don}/${f.length}</span> 已學會`;
+  } else if(activeIds.has('ALL')){
+    const tot=vocab.length, don=learned.size;
+    el.innerHTML=`全部單字 &nbsp;<span style="color:var(--gold);font-weight:600">${don}/${tot}</span> 已學會`;
+  } else {
+    const f=getFiltered();
+    const don=f.filter(i=>learned.has(i)).length;
+    const labels=[...activeIds].map(id=>GROUPS.find(g=>g.id===id)?.label).join(' · ');
+    el.innerHTML=`${labels} &nbsp;<span style="color:var(--gold);font-weight:600">${don}/${f.length}</span> 已學會`;
+  }
+}
+
+function openMenu(){
+  document.getElementById('menu-overlay').classList.remove('hidden');
+  document.getElementById('menu-panel').classList.add('open');
+  buildMenu();
+}
+function closeMenu(){
+  document.getElementById('menu-overlay').classList.add('hidden');
+  document.getElementById('menu-panel').classList.remove('open');
+  updateFilterHint();
+}
+
+// ══════════════════════════════════════════
+//  BACKUP
+// ══════════════════════════════════════════
+function openBackup(){
+  const code=encode(learned);
+  document.getElementById('code-display').textContent=code||'（尚無學習記錄）';
+  document.getElementById('restore-input').value='';
+  document.getElementById('restore-msg').textContent='';
+  document.getElementById('btn-copy').textContent='複製備份碼';
+  document.getElementById('btn-copy').classList.remove('copied');
+  document.getElementById('backup-overlay').classList.remove('hidden');
+}
+function closeBackup(){
+  document.getElementById('backup-overlay').classList.add('hidden');
+}
+function copyCode(){
+  const code=encode(learned);
+  if(!code){ alert('尚無學習記錄'); return; }
+  if(navigator.clipboard){
+    navigator.clipboard.writeText(code).then(()=>{
+      document.getElementById('btn-copy').textContent='✓ 已複製！';
+      document.getElementById('btn-copy').classList.add('copied');
+      setTimeout(()=>{
+        document.getElementById('btn-copy').textContent='複製備份碼';
+        document.getElementById('btn-copy').classList.remove('copied');
+      },2500);
+    });
+  } else {
+    document.getElementById('restore-input').value=code;
+    document.getElementById('restore-msg').textContent='請手動複製上方的碼';
+  }
+}
+function applyRestore(){
+  const s=decode(document.getElementById('restore-input').value);
+  if(s.size===0){ document.getElementById('restore-msg').textContent='❌ 無效的備份碼'; return; }
+  learned=s; save();
+  document.getElementById('restore-msg').textContent='✓ 已還原 '+s.size+' 筆記錄';
+  renderCard();buildMenu();
+  setTimeout(closeBackup,1500);
+}
+function resetAll(){
+  if(!confirm('確定要重置所有學習記錄嗎？')) return;
+  learned=new Set(); save();
+  renderCard();buildMenu();
+  closeBackup();
+}
+
+// ══════════════════════════════════════════
+//  MAP
+// ══════════════════════════════════════════
+let selectedMapRegion=null;
+
+function openMap(){
+  selectedMapRegion=null;
+  document.getElementById('map-region-tag').textContent='未選擇';
+  document.getElementById('map-region-tag').classList.remove('selected');
+  document.getElementById('btn-map-confirm').disabled=true;
+  // Reset region highlights
+  document.querySelectorAll('.region').forEach(el=>el.classList.remove('active'));
+  document.getElementById('map-overlay').classList.remove('hidden');
+}
+function closeMap(){
+  document.getElementById('map-overlay').classList.add('hidden');
+}
+
+// Wire up region clicks
+document.querySelectorAll('.region').forEach(el=>{
+  el.addEventListener('click',function(){
+    const r=this.dataset.region;
+    document.querySelectorAll('.region').forEach(e=>e.classList.remove('active'));
+    this.classList.add('active');
+    selectedMapRegion=r;
+    document.getElementById('map-region-tag').textContent=r;
+    document.getElementById('map-region-tag').classList.add('selected');
+    document.getElementById('btn-map-confirm').disabled=false;
+  });
+});
+
+function applyMapFilter(region){
+  if(region){
+    // Select GEO group and filter by region
+    activeIds=new Set(['GEO_REGION']);
+    mapFilterRegion=region;
+  } else {
+    // All place names
+    activeIds=new Set(['GEO']);
+    mapFilterRegion=null;
+  }
+  const f=getFiltered();
+  history=[f[0]??0];histPos=0;
+  setSlider(0);
+  renderCard();buildMenu();
+  updateFilterHint();
+  closeMap();
+}
+
+let mapFilterRegion=null;
+
+// ══════════════════════════════════════════
+//  QUIZ
+// ══════════════════════════════════════════
+let quizMode='jp2zh', quizScope='ALL', quizQuestions=[], quizIdx=0, quizCorrect=0, quizWrong=0, quizAnswered=false, quizLastSettings=null;
+
+function openQuiz(){
+  buildQuizScopes();
+  showQuizScreen('setup');
+  document.getElementById('quiz-overlay').classList.remove('hidden');
+}
+function closeQuiz(){
+  document.getElementById('quiz-overlay').classList.add('hidden');
+}
+
+function buildQuizScopes(){
+  const row=document.getElementById('quiz-scope-row');
+  row.innerHTML='';
+  const scopes=[{id:'ALL',label:'全部'},...GROUPS.filter(g=>g.id!=='ALL'&&g.id!=='GEO_REGION').map(g=>({id:g.id,label:g.label}))];
+  scopes.forEach(s=>{
+    const b=document.createElement('div');
+    b.className='quiz-scope-btn'+(s.id===quizScope?' sel':'');
+    b.dataset.scope=s.id;
+    b.textContent=s.label;
+    b.onclick=function(){selectQuizScope(this);};
+    row.appendChild(b);
+  });
+}
+
+function selectQuizMode(el){
+  document.querySelectorAll('.quiz-mode-btn').forEach(b=>b.classList.remove('sel'));
+  el.classList.add('sel');
+  quizMode=el.dataset.mode;
+}
+function selectQuizScope(el){
+  document.querySelectorAll('.quiz-scope-btn').forEach(b=>b.classList.remove('sel'));
+  el.classList.add('sel');
+  quizScope=el.dataset.scope;
+}
+
+function getQuizPool(){
+  if(quizScope==='ALL') return vocab;
+  const grp=GROUPS.find(g=>g.id===quizScope);
+  return grp&&grp.filter ? vocab.filter(grp.filter) : vocab;
+}
+
+function shuffle(arr){return arr.slice().sort(()=>Math.random()-0.5);}
+
+function buildQuizQuestions(count){
+  const pool=getQuizPool();
+  if(pool.length<4) return [];
+  const picked=shuffle(pool).slice(0,count);
+  return picked.map(w=>{
+    // decide direction
+    let dir=quizMode;
+    if(dir==='mix') dir=Math.random()<0.5?'jp2zh':'zh2jp';
+    // wrong choices: sample 3 others with different meaning
+    const others=vocab.filter(v=>v!==w&&v.meaning!==w.meaning);
+    const wrongs=shuffle(others).slice(0,3);
+    if(dir==='jp2zh'){
+      return {
+        dir:'jp2zh',
+        question:w.jp, kana:w.kana,
+        answer:w.meaning,
+        choices:shuffle([w.meaning,...wrongs.map(v=>v.meaning)])
+      };
+    } else {
+      return {
+        dir:'zh2jp',
+        question:w.meaning, kana:'',
+        answer:w.jp,
+        choices:shuffle([w.jp,...wrongs.map(v=>v.jp)])
+      };
+    }
+  });
+}
+
+function startQuiz(){
+  const count=parseInt(document.getElementById('quiz-count-slider').value);
+  const pool=getQuizPool();
+  if(pool.length<4){ alert('該分類單字不足 4 個，無法出題'); return; }
+  quizQuestions=buildQuizQuestions(Math.min(count,pool.length));
+  quizLastSettings={mode:quizMode,scope:quizScope,count};
+  quizIdx=0; quizCorrect=0; quizWrong=0;
+  showQuizScreen('play');
+  renderQuizQuestion();
+}
+
+function retryQuiz(){
+  if(!quizLastSettings) return;
+  quizQuestions=buildQuizQuestions(quizLastSettings.count);
+  quizIdx=0; quizCorrect=0; quizWrong=0;
+  showQuizScreen('play');
+  renderQuizQuestion();
+}
+function backToSetup(){
+  showQuizScreen('setup');
+}
+
+function showQuizScreen(s){
+  document.getElementById('quiz-setup').style.display=s==='setup'?'block':'none';
+  document.getElementById('quiz-play').style.display=s==='play'?'block':'none';
+  document.getElementById('quiz-result').style.display=s==='result'?'block':'none';
+}
+
+function renderQuizQuestion(){
+  quizAnswered=false;
+  const q=quizQuestions[quizIdx];
+  const total=quizQuestions.length;
+
+  // progress
+  document.getElementById('quiz-progress-bar').style.width=((quizIdx/total)*100)+'%';
+  document.getElementById('quiz-q-num').textContent=(quizIdx+1)+' / '+total;
+  document.getElementById('quiz-score-live').innerHTML='✓ '+quizCorrect+' &nbsp; ✗ '+quizWrong;
+  document.getElementById('quiz-direction-badge').textContent=q.dir==='jp2zh'?'日→中':'中→日';
+
+  // question
+  const qLabel=document.getElementById('quiz-q-label');
+  const qMain=document.getElementById('quiz-q-main');
+  const qKana=document.getElementById('quiz-q-kana');
+  qLabel.textContent=q.dir==='jp2zh'?'這個日文是什麼意思？':'這個中文怎麼說日文？';
+  qMain.textContent=q.question;
+  qMain.className=q.dir==='zh2jp'?'zh':'';
+  qKana.textContent=q.dir==='jp2zh'?q.kana:'';
+
+  // choices
+  const box=document.getElementById('quiz-choices');
+  box.innerHTML='';
+  q.choices.forEach(c=>{
+    const btn=document.createElement('button');
+    btn.className='quiz-choice';
+    btn.textContent=c;
+    // for jp2zh: choices are Chinese; for zh2jp: choices are Japanese (with font)
+    if(q.dir==='zh2jp'){
+      btn.style.fontFamily="'Noto Serif JP',serif";
+      btn.style.fontSize='clamp(11px,3.5vw,14px)';
+    }
+    btn.onclick=()=>answerQuiz(btn,c,q);
+    box.appendChild(btn);
+  });
+
+  document.getElementById('quiz-feedback').textContent='';
+  document.getElementById('quiz-feedback').className='';
+  document.getElementById('btn-quiz-next').style.display='none';
+}
+
+function answerQuiz(btn,chosen,q){
+  if(quizAnswered) return;
+  quizAnswered=true;
+
+  const correct=chosen===q.answer;
+  if(correct) quizCorrect++; else quizWrong++;
+
+  // style all buttons
+  document.querySelectorAll('.quiz-choice').forEach(b=>{
+    b.disabled=true;
+    if(b.textContent===q.answer) b.classList.add(correct||b!==btn?'reveal':'reveal');
+  });
+  btn.classList.add(correct?'correct':'wrong');
+  if(!correct){
+    document.querySelectorAll('.quiz-choice').forEach(b=>{
+      if(b.textContent===q.answer) b.classList.add('reveal');
+    });
+  }
+
+  const fb=document.getElementById('quiz-feedback');
+  fb.textContent=correct?'✓ 答對了！':'✗ 答錯了';
+  fb.className=correct?'ok':'ng';
+
+  document.getElementById('quiz-score-live').innerHTML='✓ '+quizCorrect+' &nbsp; ✗ '+quizWrong;
+
+  const nextBtn=document.getElementById('btn-quiz-next');
+  const isLast=quizIdx===quizQuestions.length-1;
+  nextBtn.textContent=isLast?'查看成績 →':'下一題 →';
+  nextBtn.style.display='block';
+}
+
+function quizNext(){
+  quizIdx++;
+  if(quizIdx>=quizQuestions.length){
+    showResult();
+  } else {
+    renderQuizQuestion();
+  }
+}
+
+function showResult(){
+  showQuizScreen('result');
+  const total=quizQuestions.length;
+  const pct=Math.round(quizCorrect/total*100);
+  let emoji='😅',title='繼續加油！';
+  if(pct>=90){emoji='🏆';title='太厲害了！';}
+  else if(pct>=70){emoji='🎉';title='表現不錯！';}
+  else if(pct>=50){emoji='😊';title='繼續努力！';}
+  document.getElementById('quiz-result-emoji').textContent=emoji;
+  document.getElementById('quiz-result-title').textContent=title;
+  document.getElementById('quiz-result-score').textContent=quizCorrect+'/'+total;
+  document.getElementById('quiz-result-detail').textContent='答對率 '+pct+'%　答對 '+quizCorrect+' 題　答錯 '+quizWrong+' 題';
+  document.getElementById('quiz-progress-bar').style.width='100%';
+}
+
+// ══════════════════════════════════════════
+//  INIT
+// ══════════════════════════════════════════
+renderCard();
+setSlider(0);
+updateFilterHint();
+</script>
+</body>
+</html>
